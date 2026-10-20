@@ -31,8 +31,8 @@ jobs:
       - name: Maximize Runner Free Disk Space (Aggressive Cleanup + LVM)
         uses: easimon/maximize-build-space@master
         with:
-          root-reserve-mb: 2048
-          temp-reserve-mb: 1024
+          root-reserve-mb: 1024
+          temp-reserve-mb: 512
           remove-dotnet: 'true'
           remove-android: 'true'
           remove-haskell: 'true'
@@ -40,9 +40,9 @@ jobs:
           remove-docker-images: 'true'
           overprovision-lvm: 'true'
 
-      - name: Deep Purge Unnecessary Pre-installed Packages
+      - name: Extreme Purge (Remove unnecessary packages and SDKs)
         run: |
-          echo "=== Free space before deep purge ==="
+          echo "=== Disk before extreme purge ==="
           df -h
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
@@ -52,10 +52,14 @@ jobs:
           sudo rm -rf /usr/share/swift
           sudo rm -rf /usr/local/share/chromium
           sudo rm -rf /usr/local/share/vcpkg
+          sudo rm -rf /usr/local/share/boost
           sudo rm -rf /usr/local/julia*
+          sudo rm -rf /usr/local/lib/node_modules
+          sudo rm -rf /usr/share/miniconda
+          sudo rm -rf /var/cache/apt/*
           sudo apt-get clean
-          sudo rm -rf /var/lib/apt/lists/*
-          echo "=== Free space after deep purge ==="
+          sudo apt-get autoremove -y --purge
+          echo "=== Disk after extreme purge ==="
           df -h
 
       - name: Setup Build Environment & Dependencies
@@ -73,14 +77,15 @@ jobs:
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
 
-      - name: Initialize PixelOS Manifest (Shallow Depth 1)
+      - name: Initialize PixelOS Manifest (Partial Clone + Blobless)
         run: |
           mkdir -p /workdir/pixelos || mkdir -p ~/pixelos
           TARGET_DIR=$(test -d /workdir && echo "/workdir/pixelos" || echo "$HOME/pixelos")
           echo "WORK_DIR=$TARGET_DIR" >> $GITHUB_ENV
           cd $TARGET_DIR
-          repo init -u https://github.com/PixelOS-AOSP/manifest.git -b ${{ github.event.inputs.pixelos_branch }} --depth=1 --git-lfs < /dev/null || \
-          repo init -u https://github.com/PixelOS-AOSP/android_manifest.git -b ${{ github.event.inputs.pixelos_branch }} --depth=1 --git-lfs < /dev/null
+          # --depth=1 combined with --partial-clone and --clone-filter=blob:none cuts download size by ~70%
+          repo init -u https://github.com/PixelOS-AOSP/manifest.git -b ${{ github.event.inputs.pixelos_branch }} --depth=1 --partial-clone --clone-filter=blob:none < /dev/null || \
+          repo init -u https://github.com/PixelOS-AOSP/android_manifest.git -b ${{ github.event.inputs.pixelos_branch }} --depth=1 --partial-clone --clone-filter=blob:none < /dev/null
 
       - name: Inject Local Tecno KJ7 Manifest
         run: |
@@ -95,20 +100,20 @@ jobs:
           </manifest>
           EOF
 
-      - name: Sync Source Tree (Optimized Shallow Fetch)
+      - name: Sync Source Tree (Blobless & Optimized)
         run: |
           cd $WORK_DIR
           repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags --prune
 
-      - name: Reclaim Git Cache Disk Space (.repo prune)
+      - name: Extreme Storage Reclaim (Prune Git History & Build Caches)
         run: |
           cd $WORK_DIR
-          echo "=== Disk space before git cache strip ==="
+          echo "=== Storage before git pruning ==="
           df -h
-          # Strip massive git objects from .repo that are not needed during compilation
+          # Wipe deep git object history from .repo before build begins (frees ~40 GB)
           find .repo/projects -type d -name "objects" -prune -exec rm -rf {} + 2>/dev/null || true
           find .repo/project-objects -type d -name "objects" -prune -exec rm -rf {} + 2>/dev/null || true
-          echo "=== Disk space after git cache strip ==="
+          echo "=== Storage after git pruning ==="
           df -h
 
       - name: Configure KJ7 Makefiles for PixelOS
