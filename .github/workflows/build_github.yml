@@ -31,8 +31,8 @@ jobs:
       - name: Maximize Runner Free Disk Space (Aggressive Cleanup + LVM)
         uses: easimon/maximize-build-space@master
         with:
-          root-reserve-mb: 1024
-          temp-reserve-mb: 512
+          root-reserve-mb: 512
+          temp-reserve-mb: 256
           remove-dotnet: 'true'
           remove-android: 'true'
           remove-haskell: 'true'
@@ -40,9 +40,9 @@ jobs:
           remove-docker-images: 'true'
           overprovision-lvm: 'true'
 
-      - name: Extreme Purge (Remove unnecessary packages and SDKs)
+      - name: Extreme Purge (Zero Bloatware)
         run: |
-          echo "=== Disk before extreme purge ==="
+          echo "=== Disk space before extreme purge ==="
           df -h
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
@@ -57,9 +57,11 @@ jobs:
           sudo rm -rf /usr/local/lib/node_modules
           sudo rm -rf /usr/share/miniconda
           sudo rm -rf /var/cache/apt/*
+          sudo rm -rf /var/lib/snapd
+          sudo rm -rf /snap
           sudo apt-get clean
           sudo apt-get autoremove -y --purge
-          echo "=== Disk after extreme purge ==="
+          echo "=== Disk space after extreme purge ==="
           df -h
 
       - name: Setup Build Environment & Dependencies
@@ -83,7 +85,6 @@ jobs:
           TARGET_DIR=$(test -d /workdir && echo "/workdir/pixelos" || echo "$HOME/pixelos")
           echo "WORK_DIR=$TARGET_DIR" >> $GITHUB_ENV
           cd $TARGET_DIR
-          # --depth=1 combined with --partial-clone and --clone-filter=blob:none cuts download size by ~70%
           repo init -u https://github.com/PixelOS-AOSP/manifest.git -b ${{ github.event.inputs.pixelos_branch }} --depth=1 --partial-clone --clone-filter=blob:none < /dev/null || \
           repo init -u https://github.com/PixelOS-AOSP/android_manifest.git -b ${{ github.event.inputs.pixelos_branch }} --depth=1 --partial-clone --clone-filter=blob:none < /dev/null
 
@@ -105,15 +106,23 @@ jobs:
           cd $WORK_DIR
           repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags --prune
 
-      - name: Extreme Storage Reclaim (Prune Git History & Build Caches)
+      - name: Strip Non-Essential Repositories & Git Objects
         run: |
           cd $WORK_DIR
-          echo "=== Storage before git pruning ==="
+          echo "=== Storage before stripping ==="
           df -h
-          # Wipe deep git object history from .repo before build begins (frees ~40 GB)
+          # Purge unused architectures and heavy test suites that consume 25+ GB
+          rm -rf cts
+          rm -rf pdk
+          rm -rf toolchain
+          rm -rf developers
+          rm -rf prebuilts/clang/host/darwin-x86
+          rm -rf prebuilts/gcc/darwin-x86
+          rm -rf prebuilts/gcc/linux-x86/arm
+          # Strip git objects from .repo (saves ~40 GB)
           find .repo/projects -type d -name "objects" -prune -exec rm -rf {} + 2>/dev/null || true
           find .repo/project-objects -type d -name "objects" -prune -exec rm -rf {} + 2>/dev/null || true
-          echo "=== Storage after git pruning ==="
+          echo "=== Storage after stripping ==="
           df -h
 
       - name: Configure KJ7 Makefiles for PixelOS
@@ -157,7 +166,18 @@ jobs:
           cd $WORK_DIR
           source build/envsetup.sh
           lunch pixelos_kj7-userdebug
+          # Background monitor that auto-strips bloated debug symbols from out/ during compile
+          (
+            while true; do
+              sleep 120
+              if [ -d "$WORK_DIR/out/target/product/kj7/symbols" ]; then
+                rm -rf $WORK_DIR/out/target/product/kj7/symbols/* 2>/dev/null || true
+              fi
+            done
+          ) &
+          MONITOR_PID=$!
           m -j$(nproc --all) ${{ github.event.inputs.build_target }}
+          kill $MONITOR_PID 2>/dev/null || true
 
       - name: Upload Output Artifact to GitHub Release
         uses: softprops/action-gh-release@v2
