@@ -74,7 +74,6 @@ jobs:
             subversion \
             mercurial 2>/dev/null || true
           
-          # Delete massive system toolcaches, old compilers, and unused language runtimes
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
@@ -105,7 +104,7 @@ jobs:
           sudo rm -rf /var/log/*
           sudo apt-get clean
           sudo apt-get autoremove -y --purge
-          echo "=== Free space after extreme database, toolchain & SDK purge ==="
+          echo "=== Free space after extreme purge ==="
           df -h
 
       - name: Setup Build Environment & Dependencies
@@ -123,13 +122,15 @@ jobs:
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
 
-      - name: Initialize PixelOS Manifest (Partial Clone + Blobless)
+      - name: Initialize PixelOS Manifest on Maximized LVM Mount
         run: |
-          mkdir -p /workdir/pixelos || mkdir -p ~/pixelos
-          TARGET_DIR=$(test -d /workdir && echo "/workdir/pixelos" || echo "$HOME/pixelos")
+          # Use the actual mounted LVM partition ($GITHUB_WORKSPACE) which has 100+ GB available
+          TARGET_DIR="$GITHUB_WORKSPACE/pixelos"
+          mkdir -p "$TARGET_DIR"
           echo "WORK_DIR=$TARGET_DIR" >> $GITHUB_ENV
-          cd $TARGET_DIR
-          # --depth=1 combined with --partial-clone and --clone-filter=blob:none cuts download size by ~70%
+          cd "$TARGET_DIR"
+          echo "=== Target directory disk free ==="
+          df -h .
           repo init -u https://github.com/PixelOS-AOSP/manifest.git -b ${{ github.event.inputs.pixelos_branch }} --depth=1 --partial-clone --clone-filter=blob:none < /dev/null || \
           repo init -u https://github.com/PixelOS-AOSP/android_manifest.git -b ${{ github.event.inputs.pixelos_branch }} --depth=1 --partial-clone --clone-filter=blob:none < /dev/null
 
@@ -149,14 +150,14 @@ jobs:
       - name: Sync Source Tree (Blobless & Optimized)
         run: |
           cd $WORK_DIR
-          repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags --prune
+          repo sync -c -j4 --force-sync --no-clone-bundle --no-tags --prune
 
       - name: Strip Non-Essential Repositories & Git Objects
         run: |
           cd $WORK_DIR
           echo "=== Storage before stripping ==="
-          df -h
-          # Purge unused architectures, non-Linux toolchains, and heavy test suites (reclaims 35+ GB)
+          df -h .
+          # Purge unused architectures, non-Linux toolchains, and heavy test suites
           rm -rf cts
           rm -rf pdk
           rm -rf toolchain
@@ -170,7 +171,7 @@ jobs:
           find .repo/projects -type d -name "objects" -prune -exec rm -rf {} + 2>/dev/null || true
           find .repo/project-objects -type d -name "objects" -prune -exec rm -rf {} + 2>/dev/null || true
           echo "=== Storage after stripping ==="
-          df -h
+          df -h .
 
       - name: Configure KJ7 Makefiles for PixelOS
         run: |
@@ -213,7 +214,6 @@ jobs:
           cd $WORK_DIR
           source build/envsetup.sh
           lunch pixelos_kj7-userdebug
-          # Build-time symbol & intermediate optimization flags
           export TARGET_BUILD_VARIANT=userdebug
           export SKIP_BOOT_JARS_CHECK=true
           export DONT_UNCOMPRESS_PRIV_APPS_DEXS=true
