@@ -1,0 +1,71 @@
+total 4764
+drwxr-xr-x 3 root shell    3099 2026-01-12 14:01 .
+drwxr-xr-x 9 root shell   51849 2026-01-12 14:01 ..
+-rw-r--r-- 1 root root   285864 2026-01-12 14:01 android.hardware.audio.effect@6.0-impl.so
+-rw-r--r-- 1 root root   294256 2026-01-12 14:01 android.hardware.audio.effect@7.0-impl.so
+-rw-r--r-- 1 root root   236272 2026-01-12 14:01 android.hardware.audio@6.0-impl-mediatek.so
+-rw-r--r-- 1 root root   249144 2026-01-12 14:01 android.hardware.audio@7.0-impl-mediatek.so
+-rw-r--r-- 1 root root    88448 2026-01-12 14:01 android.hardware.bluetooth.audio@2.0-impl.so
+-rw-r--r-- 1 root root   140800 2026-01-12 14:01 android.hardware.bluetooth.audio@2.1-impl.so
+-rw-r--r-- 1 root root    83600 2026-01-12 14:01 android.hardware.bluetooth@1.1-impl-mediatek.so
+-rw-r--r-- 1 root root   130480 2026-01-12 14:01 android.hardware.boot@1.0-impl-1.2-mtkimpl.so
+lrwxr-xr-x 1 root shell      60 2026-01-12 14:01 android.hardware.camera.provider@2.6-impl-mediatek.so -> mt6789/android.hardware.camera.provider@2.6-impl-mediatek.so
+-rw-r--r-- 1 root root    15960 2026-01-12 14:01 android.hardware.gatekeeper@1.0-impl.so
+-rw-r--r-- 1 root root    58344 2026-01-12 14:01 android.hardware.gnss-impl-mediatek.so
+-rw-r--r-- 1 root root   195192 2026-01-12 14:01 android.hardware.gnss@2.1-impl-mediatek.so
+lrwxr-xr-x 1 root shell      63 2026-01-12 14:01 android.hardware.graphics.allocator@4.0-impl-mediatek.so -> mt6789/android.hardware.graphics.allocator@4.0-impl-mediatek.so
+lrwxr-xr-x 1 root shell      60 2026-01-12 14:01 android.hardware.graphics.mapper@4.0-impl-mediatek.so -> mt6789/android.hardware.graphics.mapper@4.0-impl-mediatek.so
+-rw-r--r-- 1 root root    77408 2026-01-12 14:01 android.hardware.health@2.0-impl-2.1.so
+-rw-r--r-- 1 root root    63760 2026-01-12 14:01 android.hardware.renderscript@1.0-impl.so
+-rw-r--r-- 1 root root    50888 2026-01-12 14:01 android.hardware.sensors@2.X-subhal-mediatek.so
+-rw-r--r-- 1 root root    59568 2026-01-12 14:01 android.hardware.soundtrigger@2.3-impl.so
+-rw-r--r-- 1 root root    24376 2026-01-12 14:01 android.hardware.thermal@1.0-impl.so
+-rw-r--r-- 1 root root   100304 2026-01-12 14:01 android.hardware.thermal@2.0-impl.so
+-rw-r--r-- 1 root root   135024 2026-01-12 14:01 audio.bluetooth.default.so
+-rw-r--r-- 1 root root    11408 2026-01-12 14:01 audio.primary.default.so
+-rw-r--r-- 1 root root  2788496 2026-01-12 14:01 audio.primary.mediatek.so
+lrw-r--r-- 1 root root       25 2026-01-12 14:01 audio.primary.mt6789.so -> audio.primary.mediatek.so
+-rw-r--r-- 1 root root    28736 2026-01-12 14:01 audio.r_submix.default.so
+-rw-r--r-- 1 root root    37296 2026-01-12 14:01 audio.r_submix.mediatek.so
+lrw-r--r-- 1 root root       26 2026-01-12 14:01 audio.r_submix.mt6789.so -> audio.r_submix.mediatek.so
+-rw-r--r-- 1 root root    32520 2026-01-12 14:01 audio.usb.default.so
+-rw-r--r-- 1 root root    11256 2026-01-12 14:01 audio_policy.stub.so
+-rw-r--r-- 1 root root    63888 2026-01-12 14:01 face.default.so
+-rw-r--r-- 1 root root    11552 2026-01-12 14:01 fingerprint.silead.default.so
+lrw-r--r-- 1 root root       20 2026-01-12 14:01 gatekeeper.default.so -> libSoftGatekeeper.so
+lrw-r--r-- 1 root root       18 2026-01-12 14:01 gatekeeper.trustonic.so -> libMcGatekeeper.so
+-rw-r--r-- 1 root root   211280 2026-01-12 14:01 gf_fingerprint.default.so
+-rw-r--r-- 1 root root    68240 2026-01-12 14:01 gps.default.so
+lrwxr-xr-x 1 root shell      24 2026-01-12 14:01 gralloc.common.so -> mt6789/gralloc.common.so
+-rw-r--r-- 1 root root    20072 2026-01-12 14:01 gralloc.default.so
+-rw-r--r-- 1 root root  1209536 2026-01-12 14:01 hwcomposer.mtk_common.so
+-rw-r--r-- 1 root root  1422360 2026-01-12 14:01 hwcomposer.mtk_fold.so
+lrw-r--r-- 1 root root       21 2026-01-12 14:01 kmsetkey.default.so -> kmsetkey.trustonic.so
+-rw-r--r-- 1 root root    19600 2026-01-12 14:01 kmsetkey.trustonic.so
+-rw-r--r-- 1 root root    19800 2026-01-12 14:01 libMcGatekeeper.so
+-rw-r--r-- 1 root root    28496 2026-01-12 14:01 libSoftGatekeeper.so
+-rw-r--r-- 1 root root    10944 2026-01-12 14:01 local_time.default.so
+drwxr-xr-x 2 root shell     707 2026-01-12 14:01 mt6789
+-rw-r--r-- 1 root root    24048 2026-01-12 14:01 paytrigger.trustonic.so
+-rw-r--r-- 1 root root    10984 2026-01-12 14:01 power.default.so
+-rw-r--r-- 1 root root   247432 2026-01-12 14:01 sensors.elliptic.so
+-rw-r--r-- 1 root root   214608 2026-01-12 14:01 sensors.mediatek.V2.0.so
+lrw-r--r-- 1 root root       24 2026-01-12 14:01 sensors.mt6789.so -> sensors.mediatek.V2.0.so
+-rw-r--r-- 1 root root    66264 2026-01-12 14:01 sound_trigger.primary.default.so
+-rw-r--r-- 1 root root    11184 2026-01-12 14:01 thermal_hal.so
+-rw-r--r-- 1 root root    96824 2026-01-12 14:01 vendor.mediatek.hardware.bluetooth.audio@2.1-impl.so
+-rw-r--r-- 1 root root   173360 2026-01-12 14:01 vendor.mediatek.hardware.bluetooth.audio@2.2-impl.so
+lrwxr-xr-x 1 root shell      55 2026-01-12 14:01 vendor.mediatek.hardware.camera.atms@1.0-impl.so -> mt6789/vendor.mediatek.hardware.camera.atms@1.0-impl.so
+lrwxr-xr-x 1 root shell      60 2026-01-12 14:01 vendor.mediatek.hardware.camera.bgservice@1.1-impl.so -> mt6789/vendor.mediatek.hardware.camera.bgservice@1.1-impl.so
+lrwxr-xr-x 1 root shell      55 2026-01-12 14:01 vendor.mediatek.hardware.camera.ccap@1.0-impl.so -> mt6789/vendor.mediatek.hardware.camera.ccap@1.0-impl.so
+lrwxr-xr-x 1 root shell      57 2026-01-12 14:01 vendor.mediatek.hardware.camera.isphal@1.0-impl.so -> mt6789/vendor.mediatek.hardware.camera.isphal@1.0-impl.so
+lrwxr-xr-x 1 root shell      57 2026-01-12 14:01 vendor.mediatek.hardware.camera.isphal@1.1-impl.so -> mt6789/vendor.mediatek.hardware.camera.isphal@1.1-impl.so
+lrwxr-xr-x 1 root shell      61 2026-01-12 14:01 vendor.mediatek.hardware.camera.lomoeffect@1.0-impl.so -> mt6789/vendor.mediatek.hardware.camera.lomoeffect@1.0-impl.so
+-rw-r--r-- 1 root root    20312 2026-01-12 14:01 vendor.mediatek.hardware.keymaster_attestation@1.1-impl.so
+-rw-r--r-- 1 root root    55864 2026-01-12 14:01 vendor.mediatek.hardware.mms@1.6-impl.so
+-rw-r--r-- 1 root root    38792 2026-01-12 14:01 vendor.mediatek.hardware.mtkpower@1.2-impl.so
+-rw-r--r-- 1 root root    29328 2026-01-12 14:01 vendor.mediatek.hardware.nvram@1.1-impl.so
+lrwxr-xr-x 1 root shell      47 2026-01-12 14:01 vendor.mediatek.hardware.pq@2.15-impl.so -> mt6789/vendor.mediatek.hardware.pq@2.15-impl.so
+-rw-r--r-- 1 root root    41336 2026-01-12 14:01 vendor.mediatek.hardware.videotelephony@1.0-impl.so
+-rw-r--r-- 1 root root    11032 2026-01-12 14:01 vibrator.default.so
+lrwxr-xr-x 1 root shell      21 2026-01-12 14:01 vulkan.mali.so -> mt6789/vulkan.mali.so

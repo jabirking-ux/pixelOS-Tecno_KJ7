@@ -1,0 +1,47 @@
+name: Build PixelOS 17 on Crave
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build Variant (userdebug or user)'
+        required: true
+        default: 'userdebug'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Crave CLI
+        run: |
+          curl -s https://raw.githubusercontent.com/accupara/crave/master/get_crave.sh | bash -s --
+          sudo mv crave /usr/local/bin/
+          crave version
+
+      - name: Configure Crave Credentials
+        env:
+          CRAVE_CONF: ${{ secrets.CRAVE_CONF }}
+        run: |
+          mkdir -p ~/.crave
+          echo "$CRAVE_CONF" > ~/.crave/crave.conf
+          chmod 600 ~/.crave/crave.conf
+
+      - name: Execute Build on Crave Cloud
+        run: |
+          echo "Starting remote compilation on Crave high-performance cluster..."
+          crave run --no-patch -- "bash scripts/crave_build.sh"
+
+      - name: Pull and Upload Flashable ROM
+        run: |
+          crave pull "out/target/product/kj7/*.zip"
+          mkdir -p release_artifacts
+          mv out/target/product/kj7/*.zip release_artifacts/ || true
+
+      - name: Upload Build Artifact to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: PixelOS-Android17-TECNO-KJ7
+          path: release_artifacts/*.zip

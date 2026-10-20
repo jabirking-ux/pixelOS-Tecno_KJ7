@@ -1,0 +1,228 @@
+Slot 1:
+Metadata version: 10.2
+Metadata size: 2688 bytes
+Metadata max size: 65536 bytes
+Metadata slot count: 3
+Header flags: virtual_ab_device
+Partition table:
+------------------------
+  Name: odm_dlkm_b
+  Group: main_b
+  Attributes: readonly,updated
+  Extents:
+    0 .. 679 linear super 2048
+------------------------
+  Name: product_b
+  Group: main_b
+  Attributes: readonly,updated
+  Extents:
+    0 .. 2271231 linear super 4096
+    2271232 .. 2272255 linear super 3072
+    2272256 .. 2273279 linear super 4000768
+    2273280 .. 2274303 linear super 8340480
+    2274304 .. 2275327 linear super 10521600
+    2275328 .. 2276351 linear super 11932672
+    2276352 .. 2277375 linear super 11934720
+    2277376 .. 2278399 linear super 11936768
+    2278400 .. 2296831 linear super 14297088
+    2296832 .. 2297855 linear super 14316544
+    2297856 .. 2298879 linear super 14318592
+    2298880 .. 2637823 linear super 14320640
+    2637824 .. 2642943 linear super 14695424
+    2642944 .. 2651135 linear super 10513408
+    2651136 .. 2702407 linear super 14706688
+------------------------
+  Name: system_b
+  Group: main_b
+  Attributes: readonly,updated
+  Extents:
+    0 .. 1725439 linear super 2275328
+    1725440 .. 1739775 linear super 14659584
+    1739776 .. 1744895 linear super 14700544
+    1744896 .. 1756159 linear super 14780416
+    1756160 .. 1758207 linear super 14758912
+    1758208 .. 1799167 linear super 15090688
+    1799168 .. 1813503 linear super 15196160
+    1813504 .. 1814271 linear super 15195136
+------------------------
+  Name: system_ext_b
+  Group: main_b
+  Attributes: readonly,updated
+  Extents:
+    0 .. 4338687 linear super 4001792
+    4338688 .. 4360191 linear super 14673920
+    4360192 .. 4364287 linear super 14821376
+    4364288 .. 4368383 linear super 14760960
+    4368384 .. 4431871 linear super 15131648
+    4431872 .. 4431975 linear super 15312896
+------------------------
+  Name: vendor_b
+  Group: main_b
+  Attributes: readonly,updated
+  Extents:
+    0 .. 2171903 linear super 8341504
+    2171904 .. 2174447 linear super 15210496
+------------------------
+  Name: vendor_dlkm_b
+  Group: main_b
+  Attributes: readonly,updated
+  Extents:
+    0 .. 73575 linear super 10522624
+------------------------
+  Name: tr_product_b
+  Group: main_b
+  Attributes: readonly,updated
+  Extents:
+    0 .. 1336319 linear super 10596352
+    1336320 .. 1337343 linear super 14705664
+    1337344 .. 1338367 linear super 14820352
+    1338368 .. 1361919 linear super 14974976
+    1361920 .. 1408847 linear super 15226880
+------------------------
+  Name: tr_mi_b
+  Group: main_b
+  Attributes: readonly,updated
+  Extents:
+    0 .. 679 linear super 11933696
+------------------------
+  Name: tr_theme_b
+  Group: main_b
+  Attributes: readonly,updated
+  Extents:
+    0 .. 679 linear super 11935744
+------------------------
+  Name: tr_preload_b
+  Group: main_b
+  Attributes: readonly,updated
+  Extents:
+    0 .. 2359295 linear super 11937792
+    2359296 .. 2386943 linear super 14792704
+    2386944 .. 2495487 linear super 14825472
+    2495488 .. 2534399 linear super 14936064
+    2534400 .. 2549759 linear super 14765056
+    2549760 .. 2550783 linear super 14791680
+    2550784 .. 2552831 linear super 14934016
+    2552832 .. 2644991 linear super 14998528
+    2644992 .. 2658303 linear super 15213568
+    2658304 .. 2697215 linear super 15273984
+    2697216 .. 2710287 linear super 15315968
+------------------------
+  Name: tr_region_b
+  Group: main_b
+  Attributes: readonly,updated
+  Extents:
+    0 .. 679 linear super 14315520
+------------------------
+  Name: tr_company_b
+  Group: main_b
+  Attributes: readonly,updated
+  Extents:
+    0 .. 679 linear super 14317568
+------------------------
+  Name: tr_carrier_b
+  Group: main_b
+  Attributes: readonly,updated
+  Extents:
+    0 .. 679 linear super 14319616
+------------------------
+  Name: odm_dlkm_b-cow
+  Group: cow
+  Attributes: none
+  Extents:
+    0 .. 615 linear super 15313920
+------------------------
+  Name: product_b-cow
+  Group: cow
+  Attributes: none
+  Extents:
+    0 .. 1023 linear super 15314944
+    1024 .. 1679055 linear super 15329280
+------------------------
+  Name: system_b-cow
+  Group: cow
+  Attributes: none
+  Extents:
+    0 .. 317983 linear super 17007616
+------------------------
+Super partition layout:
+------------------------
+super: 2048 .. 2728: odm_dlkm_b (680 sectors)
+super: 3072 .. 4096: product_b (1024 sectors)
+super: 4096 .. 2275328: product_b (2271232 sectors)
+super: 2275328 .. 4000768: system_b (1725440 sectors)
+super: 4000768 .. 4001792: product_b (1024 sectors)
+super: 4001792 .. 8340480: system_ext_b (4338688 sectors)
+super: 8340480 .. 8341504: product_b (1024 sectors)
+super: 8341504 .. 10513408: vendor_b (2171904 sectors)
+super: 10513408 .. 10521600: product_b (8192 sectors)
+super: 10521600 .. 10522624: product_b (1024 sectors)
+super: 10522624 .. 10596200: vendor_dlkm_b (73576 sectors)
+super: 10596352 .. 11932672: tr_product_b (1336320 sectors)
+super: 11932672 .. 11933696: product_b (1024 sectors)
+super: 11933696 .. 11934376: tr_mi_b (680 sectors)
+super: 11934720 .. 11935744: product_b (1024 sectors)
+super: 11935744 .. 11936424: tr_theme_b (680 sectors)
+super: 11936768 .. 11937792: product_b (1024 sectors)
+super: 11937792 .. 14297088: tr_preload_b (2359296 sectors)
+super: 14297088 .. 14315520: product_b (18432 sectors)
+super: 14315520 .. 14316200: tr_region_b (680 sectors)
+super: 14316544 .. 14317568: product_b (1024 sectors)
+super: 14317568 .. 14318248: tr_company_b (680 sectors)
+super: 14318592 .. 14319616: product_b (1024 sectors)
+super: 14319616 .. 14320296: tr_carrier_b (680 sectors)
+super: 14320640 .. 14659584: product_b (338944 sectors)
+super: 14659584 .. 14673920: system_b (14336 sectors)
+super: 14673920 .. 14695424: system_ext_b (21504 sectors)
+super: 14695424 .. 14700544: product_b (5120 sectors)
+super: 14700544 .. 14705664: system_b (5120 sectors)
+super: 14705664 .. 14706688: tr_product_b (1024 sectors)
+super: 14706688 .. 14757960: product_b (51272 sectors)
+super: 14758912 .. 14760960: system_b (2048 sectors)
+super: 14760960 .. 14765056: system_ext_b (4096 sectors)
+super: 14765056 .. 14780416: tr_preload_b (15360 sectors)
+super: 14780416 .. 14791680: system_b (11264 sectors)
+super: 14791680 .. 14792704: tr_preload_b (1024 sectors)
+super: 14792704 .. 14820352: tr_preload_b (27648 sectors)
+super: 14820352 .. 14821376: tr_product_b (1024 sectors)
+super: 14821376 .. 14825472: system_ext_b (4096 sectors)
+super: 14825472 .. 14934016: tr_preload_b (108544 sectors)
+super: 14934016 .. 14936064: tr_preload_b (2048 sectors)
+super: 14936064 .. 14974976: tr_preload_b (38912 sectors)
+super: 14974976 .. 14998528: tr_product_b (23552 sectors)
+super: 14998528 .. 15090688: tr_preload_b (92160 sectors)
+super: 15090688 .. 15131648: system_b (40960 sectors)
+super: 15131648 .. 15195136: system_ext_b (63488 sectors)
+super: 15195136 .. 15195904: system_b (768 sectors)
+super: 15196160 .. 15210496: system_b (14336 sectors)
+super: 15210496 .. 15213040: vendor_b (2544 sectors)
+super: 15213568 .. 15226880: tr_preload_b (13312 sectors)
+super: 15226880 .. 15273808: tr_product_b (46928 sectors)
+super: 15273984 .. 15312896: tr_preload_b (38912 sectors)
+super: 15312896 .. 15313000: system_ext_b (104 sectors)
+super: 15313920 .. 15314536: odm_dlkm_b-cow (616 sectors)
+super: 15314944 .. 15315968: product_b-cow (1024 sectors)
+super: 15315968 .. 15329040: tr_preload_b (13072 sectors)
+super: 15329280 .. 17007312: product_b-cow (1678032 sectors)
+super: 17007616 .. 17325600: system_b-cow (317984 sectors)
+------------------------
+Block device table:
+------------------------
+  Partition name: super
+  First sector: 2048
+  Size: 8870707200 bytes
+  Flags: none
+------------------------
+Group table:
+------------------------
+  Name: default
+  Maximum size: 0 bytes
+  Flags: none
+------------------------
+  Name: main_b
+  Maximum size: 8868610048 bytes
+  Flags: none
+------------------------
+  Name: cow
+  Maximum size: 0 bytes
+  Flags: none
+------------------------

@@ -1,0 +1,13 @@
+## All proprietary files from this list, unless pinned and noted otherwise, are
+## from KJ7-OP-user 12 SP1A.210812.016 250115V1871 release-keys
+
+gz.img;AB
+lk.img;AB
+logo.bin:logo.img;AB|e1afce034c02f743ac84f1d33799b58a3bb5a5b4
+md1img.img;AB
+preloader_kj7_h6931.bin:preloader_raw.img;AB|e694d8ef8b1d9977ca4f7a53c62e44605f17b15a
+scp.img;AB
+spmfw.img;AB
+sspm.img;AB
+tee.img;AB
+tkv.img;AB

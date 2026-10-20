@@ -1,0 +1,135 @@
+================================================================================
+TECNO SPARK 20 PRO+ (TECNO-KJ7 / KJ7-OP) HARDWARE & STOCK FIRMWARE AUDIT
+Date: 2026-10-20
+Target Port: PixelOS (Android 17 / seventeen branch)
+Device Access State: Authorized ADB, KernelSU Root (context=u:r:ksu:s0)
+Bootloader State: Unlocked (verifiedbootstate=orange, vbmeta.device_state=unlocked)
+================================================================================
+
+1. CORE SYSTEM PROPERTIES (Verified from Device)
+--------------------------------------------------------------------------------
+ro.product.model                = TECNO KJ7
+ro.product.device               = TECNO-KJ7
+ro.product.name                 = KJ7-OP
+ro.product.vendor.device        = TECNO-KJ7
+ro.product.brand                = TECNO
+ro.product.manufacturer         = TECNO
+ro.board.platform               = mt6789
+ro.boot.hardware                = mt6789
+ro.hardware                     = mt6789
+ro.build.version.release        = 14
+ro.build.version.sdk            = 34
+ro.vendor.build.version.sdk     = 31 (Android 12 MediaTek BSP base)
+ro.build.fingerprint            = TECNO/KJ7-OP/TECNO-KJ7:14/UP1A.231005.007/260112V2294:user/release-keys
+ro.vendor.build.fingerprint     = TECNO/KJ7-OP/TECNO-KJ7:12/SP1A.210812.016/260112V2353:user/release-keys
+ro.build.version.security_patch = 2024-12-05
+ro.vendor.build.security_patch  = 2024-12-05
+ro.boot.slot_suffix             = _b (Virtual A/B active slot: B)
+ro.treble.enabled               = true
+ro.product.cpu.abilist          = arm64-v8a,armeabi-v7a,armeabi
+ro.crypto.state                 = encrypted
+ro.crypto.type                  = file (FBE with inlinecrypt)
+
+2. KERNEL & BOOT CONFIGURATION (Verified from /proc/version, config.gz, bootconfig)
+--------------------------------------------------------------------------------
+Kernel Version String:
+Linux localhost 5.10.226-android12-9-00047-g4968e29b7f92-ab12786767 #1 SMP PREEMPT Wed Dec 11 21:50:47 UTC 2024 aarch64 Toybox
+Branch Base: Android Common Kernel (ACK) android12-5.10
+Compiler: Clang 12.0.5 (Android 7284624, based on r416183b)
+Storage Device: UFS 2.2 controller at 11270000.ufshci (FlashID: Hosing+eUFS2.2_256)
+Page Size: 4096 bytes
+Architecture: ARM64 (armv8-2a-dotprod, Cortex-A76 + Cortex-A55)
+
+Bootconfig parameters:
+androidboot.hardware            = "mt6789"
+androidboot.boot_devices        = "bootdevice", "soc/11270000.ufshci", "11270000.ufshci"
+androidboot.vbmeta.avb_version  = "1.2"
+androidboot.vbmeta.device_state = "unlocked"
+androidboot.veritymode          = "enforcing"
+androidboot.verifiedbootstate   = "orange"
+androidboot.slot_suffix         = "_b"
+androidboot.dtb_idx             = "0"
+androidboot.dtbo_idx            = "0"
+androidboot.tran.lcmepc.params  = "205733425150313732304230353131"
+
+Kernel Cmdline:
+bootopt=64S3,32N2,64N2 stack_depot_disable=on kasan.stacktrace=off kvm-arm.mode=protected cgroup_disable=pressure cgroup.memory=nokmem console=tty0 root=/dev/ram loglevel=8 8250.nr_uarts=4 transparent_hugepage=never vmalloc=400M swiotlb=noforce firmware_class.path=/vendor/firmware pelt=8 loop.max_part=7 ramoops.mem_address=0x48090000 ramoops.mem_size=0xe0000 ramoops.pmsg_size=0x40000 ramoops.console_size=0x40000 mtk_printk_ctrl.disable_uart=1 PN=kj7_h895 arm64.nomte tran_cpu_model=mt6789 bootconfig
+
+3. PARTITION TABLE & MEMORY MAP (Verified from blockdev & lpdump)
+--------------------------------------------------------------------------------
+Physical Block Devices:
+/dev/block/sda: 4194304 bytes (4 MB)
+/dev/block/sdb: 4194304 bytes (4 MB)
+/dev/block/sdc: 256313917440 bytes (~238.7 GB UFS internal storage)
+
+Key Partition Sizes:
+boot_a / boot_b:                67108864 bytes (64 MB) [Header v4]
+vendor_boot_a / vendor_boot_b:  67108864 bytes (64 MB) [Header v4]
+init_boot_a / init_boot_b:      8388608 bytes (8 MB) [Unused/Zeroed by OEM BSP]
+dtbo_a / dtbo_b:                8388608 bytes (8 MB) [DTBO Table]
+vbmeta_a / vbmeta_b:            8388608 bytes (8 MB)
+vbmeta_system_a / vbmeta_system_b: 8388608 bytes (8 MB)
+vbmeta_vendor_a / vbmeta_vendor_b: 8388608 bytes (8 MB)
+super:                          8870707200 bytes (8459 MB)
+metadata:                       33554432 bytes (32 MB)
+userdata:                       245610020864 bytes (~228.7 GB)
+persist:                        52396032 bytes (ext4)
+nvdata:                         67108864 bytes (ext4)
+nvcfg:                          33554432 bytes (ext4)
+protect1:                       8388608 bytes (ext4)
+protect2:                       8388608 bytes (ext4)
+tranfs:                         321110016 bytes (306 MB)
+
+Dynamic Partitions Layout (inside super):
+Group main_b maximum size: 8868610048 bytes
+Included dynamic subpartitions:
+  - system_b:       erofs (read-only)
+  - system_ext_b:   erofs (read-only)
+  - product_b:      erofs (read-only)
+  - vendor_b:       erofs (read-only)
+  - vendor_dlkm_b:  ext4 (kernel modules)
+  - odm_dlkm_b:     ext4 (kernel modules)
+  - tr_product_b:   erofs (Transsion customization overlays)
+  - tr_preload_b:   erofs (Transsion preloaded apps)
+  - tr_mi_b:        ext4 (Transsion region/operator)
+  - tr_theme_b:     ext4 (Transsion theme assets)
+  - tr_region_b:    ext4
+  - tr_company_b:   ext4
+  - tr_carrier_b:   ext4
+
+4. BOOT & VENDOR_BOOT HEADER VERIFICATION
+--------------------------------------------------------------------------------
+boot.img:
+  Header Version: 4
+  Kernel Size: 19,527,273 bytes (GZIP compressed ARM64 Image)
+  Ramdisk Size: 1,863,696 bytes
+  Page Size: 4096 bytes
+
+vendor_boot.img:
+  Header Version: 4
+  Page Size: 4096 bytes
+  Kernel Base: 0x40000000
+  Ramdisk Load Address: 0x66f00000
+  Ramdisk Size: 48,356,518 bytes (46.12 MB)
+  Tags Address: 0x47c80000
+  DTB Size: 205,263 bytes (DTBO Table v1 containing flattened devicetrees)
+  DTB Load Address: 0x47c80000
+  Vendor Cmdline: bootopt=64S3,32N2,64N2
+  Vendor Ramdisk Entries: 2 (Normal ramdisk + Recovery ramdisk)
+
+5. HARDWARE SUBSYSTEM INVENTORY
+--------------------------------------------------------------------------------
+Touchscreen:
+  Drivers: focaltech_ft3683g, Goodix gt9886, gt9896s, gt9916_common
+Display:
+  AMOLED 120Hz 1080x2436, density 480 dpi
+Fingerprint:
+  Driver: tran_fp.ko (Goodix / Silead in-display optical sensor)
+Audio:
+  MediaTek AFE (snd-soc-mt6789-afe), MT6366 PMIC codec, FS1599 / TFA98xx smart amp
+Connectivity:
+  Wi-Fi: MediaTek Gen4m (wlan_drv_gen4m_6789.ko, wmt_drv.ko)
+  Bluetooth: MediaTek Connac 1x (bt_drv_connac1x.ko)
+  NFC: NXP / STMicroelectronics (pn553.ko, st21nfc.ko)
+Camera:
+  108MP Main + 32MP Front (imgsensor_isp6s.ko, camera_isp.ko, AW36515 flash)
