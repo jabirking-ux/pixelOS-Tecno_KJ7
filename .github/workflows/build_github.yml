@@ -41,7 +41,7 @@ jobs:
           remove-docker-images: 'true'
           overprovision-lvm: 'true'
 
-      - name: Unmount and Completely Purge Snaps (Fix Read-only error)
+      - name: Unmount and Completely Purge Snaps
         run: |
           echo "=== Disk space before unmounting snaps ==="
           df -h
@@ -131,7 +131,6 @@ jobs:
           cd "$TARGET_DIR"
           echo "=== Target directory disk free ==="
           df -h .
-          # Skips emulator, tests, cts, mips, x86, darwin, sample apps
           repo init -u https://github.com/PixelOS-AOSP/manifest.git -b ${{ github.event.inputs.pixelos_branch }} \
             --groups=default,-mips,-x86,-darwin,-emulator,-notdefault,-tests,-cts \
             --depth=1 \
@@ -156,20 +155,17 @@ jobs:
           </manifest>
           EOF
 
-      - name: Sync Source Tree (Blobless, Filtered & Optimized)
+      - name: Sync Source Tree
         run: |
           cd $WORK_DIR
           repo sync -c -j4 --force-sync --no-clone-bundle --no-tags --prune
 
-      - name: Strip Entire .repo Metadata and Unneeded Trees (Nuclear Space Saver: +45 GB)
+      - name: Strip Entire DotRepo Metadata and Unneeded Trees
         run: |
           cd $WORK_DIR
           echo "=== Storage before .repo elimination ==="
           df -h .
-          # In CI builds, once checkout is complete, .repo is 100% DEAD WEIGHT.
-          # Wiping the entire .repo metadata tree reclaims 35-45 GB of pure SSD space instantly!
           rm -rf .repo
-          # Purge unused sample apps and architectures
           rm -rf cts pdk toolchain developers sdk
           rm -rf prebuilts/clang/host/darwin-x86
           rm -rf prebuilts/gcc/darwin-x86
@@ -220,14 +216,12 @@ jobs:
           cd $WORK_DIR
           source build/envsetup.sh
           lunch pixelos_kj7-userdebug
-          # Build-time symbol, memory & disk optimization flags
           export TARGET_BUILD_VARIANT=userdebug
           export SKIP_BOOT_JARS_CHECK=true
           export DONT_UNCOMPRESS_PRIV_APPS_DEXS=true
           export SOONG_ALLOW_MISSING_DEPENDENCIES=true
           export WITHOUT_CHECK_API=true
           
-          # Real-time background symbol & intermediate pruner
           (
             while true; do
               sleep 120
