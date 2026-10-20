@@ -31,9 +31,9 @@ jobs:
       - name: Maximize Runner Free Disk Space (Aggressive Cleanup + LVM)
         uses: easimon/maximize-build-space@master
         with:
-          root-reserve-mb: 256
-          temp-reserve-mb: 128
-          swap-size-mb: 1024
+          root-reserve-mb: 128
+          temp-reserve-mb: 64
+          swap-size-mb: 512
           remove-dotnet: 'true'
           remove-android: 'true'
           remove-haskell: 'true'
@@ -131,17 +131,14 @@ jobs:
           cd "$TARGET_DIR"
           echo "=== Target directory disk free ==="
           df -h .
-          # Squeeze flags:
-          # 1. --groups=default,-mips,-x86,-darwin: Skips downloading x86/MIPS emulator images & Darwin host tools (saves 30+ GB!)
-          # 2. --partial-clone --clone-filter=blob:none: Blobless clone (saves 70% git history)
-          # 3. --depth=1: Shallow depth
+          # Extreme manifest filtering: excludes emulator, tests, cts, mips, x86, and darwin
           repo init -u https://github.com/PixelOS-AOSP/manifest.git -b ${{ github.event.inputs.pixelos_branch }} \
-            --groups=default,-mips,-x86,-darwin \
+            --groups=default,-mips,-x86,-darwin,-emulator,-notdefault,-tests,-cts \
             --depth=1 \
             --partial-clone \
             --clone-filter=blob:none < /dev/null || \
           repo init -u https://github.com/PixelOS-AOSP/android_manifest.git -b ${{ github.event.inputs.pixelos_branch }} \
-            --groups=default,-mips,-x86,-darwin \
+            --groups=default,-mips,-x86,-darwin,-emulator,-notdefault,-tests,-cts \
             --depth=1 \
             --partial-clone \
             --clone-filter=blob:none < /dev/null
