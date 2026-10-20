@@ -6,11 +6,12 @@ on:
       pixelos_branch:
         description: 'PixelOS Branch'
         required: true
-        default: 'seventeen'
+        default: 'fourteen'
         type: choice
         options:
+          - fourteen
+          - fifteen
           - seventeen
-          - sixteen-qpr2
       build_target:
         description: 'Build Target'
         required: true
@@ -27,34 +28,63 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Maximize Runner Free Disk Space
-        uses: rokibhasansagar/slimhub_actions@main
-
-      - name: Configure Extra Swap Memory
-        uses: pierotofy/set-swap-space@master
+      - name: Maximize Runner Free Disk Space (Aggressive Cleanup + LVM)
+        uses: easimon/maximize-build-space@master
         with:
-          swap-size-gb: 12
+          root-reserve-mb: 2048
+          temp-reserve-mb: 1024
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
+          overprovision-lvm: 'true'
+
+      - name: Deep Purge Unnecessary Pre-installed Packages
+        run: |
+          echo "=== Free space before deep purge ==="
+          df -h
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache
+          sudo rm -rf /usr/local/share/powershell
+          sudo rm -rf /usr/share/swift
+          sudo rm -rf /usr/local/share/chromium
+          sudo rm -rf /usr/local/share/vcpkg
+          sudo rm -rf /usr/local/julia*
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+          echo "=== Free space after deep purge ==="
+          df -h
 
       - name: Setup Build Environment & Dependencies
         run: |
-          sudo apt update
-          sudo apt install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick lib32readline-dev lib32z1-dev libelf-dev liblz4-tool libncurses5 libncurses5-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev python3 openjdk-21-jdk aria2 libtinfo5
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            bc bison build-essential ccache curl flex g++-multilib gcc-multilib git gnupg gperf \
+            imagemagick lib32readline-dev lib32z1-dev libelf-dev liblz4-tool libncurses5 libncurses5-dev \
+            libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc \
+            zip zlib1g-dev python3 openjdk-21-jdk aria2 libtinfo5
           mkdir -p ~/bin
-          curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+          curl -s https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
           chmod a+x ~/bin/repo
           echo "$HOME/bin" >> $GITHUB_PATH
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
 
-      - name: Initialize PixelOS Manifest (Shallow)
+      - name: Initialize PixelOS Manifest (Shallow Depth 1)
         run: |
-          mkdir -p ~/pixelos
-          cd ~/pixelos
-          repo init -u https://github.com/PixelOS-AOSP/android_manifest.git -b ${{ github.event.inputs.pixelos_branch }} --depth=1 --git-lfs < /dev/null || true
+          mkdir -p /workdir/pixelos || mkdir -p ~/pixelos
+          TARGET_DIR=$(test -d /workdir && echo "/workdir/pixelos" || echo "$HOME/pixelos")
+          echo "WORK_DIR=$TARGET_DIR" >> $GITHUB_ENV
+          cd $TARGET_DIR
+          repo init -u https://github.com/PixelOS-AOSP/manifest.git -b ${{ github.event.inputs.pixelos_branch }} --depth=1 --git-lfs < /dev/null || \
+          repo init -u https://github.com/PixelOS-AOSP/android_manifest.git -b ${{ github.event.inputs.pixelos_branch }} --depth=1 --git-lfs < /dev/null
 
       - name: Inject Local Tecno KJ7 Manifest
         run: |
-          cd ~/pixelos
+          cd $WORK_DIR
           mkdir -p .repo/local_manifests
           cat << 'EOF' > .repo/local_manifests/kj7.xml
           <?xml version="1.0" encoding="UTF-8"?>
@@ -65,14 +95,25 @@ jobs:
           </manifest>
           EOF
 
-      - name: Sync Source Tree
+      - name: Sync Source Tree (Optimized Shallow Fetch)
         run: |
-          cd ~/pixelos
-          repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
+          cd $WORK_DIR
+          repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags --prune
+
+      - name: Reclaim Git Cache Disk Space (.repo prune)
+        run: |
+          cd $WORK_DIR
+          echo "=== Disk space before git cache strip ==="
+          df -h
+          # Strip massive git objects from .repo that are not needed during compilation
+          find .repo/projects -type d -name "objects" -prune -exec rm -rf {} + 2>/dev/null || true
+          find .repo/project-objects -type d -name "objects" -prune -exec rm -rf {} + 2>/dev/null || true
+          echo "=== Disk space after git cache strip ==="
+          df -h
 
       - name: Configure KJ7 Makefiles for PixelOS
         run: |
-          cd ~/pixelos/device/tecno/kj7
+          cd $WORK_DIR/device/tecno/kj7
           cat << 'EOF' > AndroidProducts.mk
           PRODUCT_MAKEFILES := \
               $(LOCAL_DIR)/pixelos_kj7.mk
@@ -101,14 +142,14 @@ jobs:
               BuildFingerprint=TECNO/KJ7-OP/TECNO-KJ7:14/UP1A.231005.007/260112V2294:user/release-keys
           EOF
 
-          # Align physical partition sizes
+          # Align physical partition sizes from stock KJ7 audit
           sed -i 's/BOARD_BOOTIMAGE_PARTITION_SIZE := .*/BOARD_BOOTIMAGE_PARTITION_SIZE := 67108864/g' BoardConfig.mk
           sed -i 's/BOARD_SUPER_PARTITION_SIZE := .*/BOARD_SUPER_PARTITION_SIZE := 8870707200/g' BoardConfig.mk
           sed -i 's/BOARD_MEDIATEK_DYNAMIC_PARTITIONS_SIZE := .*/BOARD_MEDIATEK_DYNAMIC_PARTITIONS_SIZE := 8868610048/g' BoardConfig.mk
 
       - name: Compile PixelOS for Tecno KJ7
         run: |
-          cd ~/pixelos
+          cd $WORK_DIR
           source build/envsetup.sh
           lunch pixelos_kj7-userdebug
           m -j$(nproc --all) ${{ github.event.inputs.build_target }}
@@ -118,9 +159,9 @@ jobs:
         if: success()
         with:
           files: |
-            ~/pixelos/out/target/product/kj7/*.zip
-            ~/pixelos/out/target/product/kj7/boot.img
-            ~/pixelos/out/target/product/kj7/vendor_boot.img
+            ${{ env.WORK_DIR }}/out/target/product/kj7/*.zip
+            ${{ env.WORK_DIR }}/out/target/product/kj7/boot.img
+            ${{ env.WORK_DIR }}/out/target/product/kj7/vendor_boot.img
           name: PixelOS-KJ7-${{ github.event.inputs.pixelos_branch }}
           tag_name: build-${{ github.run_number }}
         env:
