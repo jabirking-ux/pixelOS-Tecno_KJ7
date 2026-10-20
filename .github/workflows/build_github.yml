@@ -68,7 +68,7 @@ jobs:
       - name: Sync Source Tree
         run: |
           cd ~/pixelos
-          repo sync -c -j4 --force-sync --no-clone-bundle --no-tags --depth=1
+          repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
 
       - name: Configure KJ7 Makefiles for PixelOS
         run: |
