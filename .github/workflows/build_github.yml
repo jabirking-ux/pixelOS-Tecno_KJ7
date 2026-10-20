@@ -31,8 +31,9 @@ jobs:
       - name: Maximize Runner Free Disk Space (Aggressive Cleanup + LVM)
         uses: easimon/maximize-build-space@master
         with:
-          root-reserve-mb: 512
-          temp-reserve-mb: 256
+          root-reserve-mb: 256
+          temp-reserve-mb: 128
+          swap-size-mb: 1024
           remove-dotnet: 'true'
           remove-android: 'true'
           remove-haskell: 'true'
@@ -124,15 +125,26 @@ jobs:
 
       - name: Initialize PixelOS Manifest on Maximized LVM Mount
         run: |
-          # Use the actual mounted LVM partition ($GITHUB_WORKSPACE) which has 100+ GB available
           TARGET_DIR="$GITHUB_WORKSPACE/pixelos"
           mkdir -p "$TARGET_DIR"
           echo "WORK_DIR=$TARGET_DIR" >> $GITHUB_ENV
           cd "$TARGET_DIR"
           echo "=== Target directory disk free ==="
           df -h .
-          repo init -u https://github.com/PixelOS-AOSP/manifest.git -b ${{ github.event.inputs.pixelos_branch }} --depth=1 --partial-clone --clone-filter=blob:none < /dev/null || \
-          repo init -u https://github.com/PixelOS-AOSP/android_manifest.git -b ${{ github.event.inputs.pixelos_branch }} --depth=1 --partial-clone --clone-filter=blob:none < /dev/null
+          # Squeeze flags:
+          # 1. --groups=default,-mips,-x86,-darwin: Skips downloading x86/MIPS emulator images & Darwin host tools (saves 30+ GB!)
+          # 2. --partial-clone --clone-filter=blob:none: Blobless clone (saves 70% git history)
+          # 3. --depth=1: Shallow depth
+          repo init -u https://github.com/PixelOS-AOSP/manifest.git -b ${{ github.event.inputs.pixelos_branch }} \
+            --groups=default,-mips,-x86,-darwin \
+            --depth=1 \
+            --partial-clone \
+            --clone-filter=blob:none < /dev/null || \
+          repo init -u https://github.com/PixelOS-AOSP/android_manifest.git -b ${{ github.event.inputs.pixelos_branch }} \
+            --groups=default,-mips,-x86,-darwin \
+            --depth=1 \
+            --partial-clone \
+            --clone-filter=blob:none < /dev/null
 
       - name: Inject Local Tecno KJ7 Manifest
         run: |
@@ -147,7 +159,7 @@ jobs:
           </manifest>
           EOF
 
-      - name: Sync Source Tree (Blobless & Optimized)
+      - name: Sync Source Tree (Blobless, Filtered & Optimized)
         run: |
           cd $WORK_DIR
           repo sync -c -j4 --force-sync --no-clone-bundle --no-tags --prune
