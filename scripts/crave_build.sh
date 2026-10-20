@@ -3,11 +3,15 @@ set -e
 
 echo "=== Crave Cloud Build: PixelOS Android 17 for Tecno KJ7 (MT6789) ==="
 
+# Branch selection (defaults to latest: seventeen)
+BRANCH="${BRANCH:-seventeen}"
+echo "Targeting PixelOS branch: $BRANCH"
+
 # 1. Clean previous build outputs if requested
 rm -rf out/target/product/kj7/*.img out/target/product/kj7/*.zip
 
-# 2. Initialize official PixelOS Android 17 manifest
-repo init -u https://github.com/PixelOS-AOSP/android_manifest.git -b seventeen --git-lfs < /dev/null || true
+# 2. Initialize official PixelOS manifest
+repo init -u https://github.com/PixelOS-AOSP/android_manifest.git -b "$BRANCH" --git-lfs < /dev/null || true
 
 # 3. Setup local manifest directory
 mkdir -p .repo/local_manifests

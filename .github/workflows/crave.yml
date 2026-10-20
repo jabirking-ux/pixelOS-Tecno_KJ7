@@ -1,8 +1,17 @@
-name: Build PixelOS 17 on Crave
+name: Build PixelOS on Crave
 
 on:
   workflow_dispatch:
     inputs:
+      pixelos_branch:
+        description: 'PixelOS Branch'
+        required: true
+        default: 'seventeen'
+        type: choice
+        options:
+          - seventeen
+          - sixteen-qpr2
+          - sixteen
       build_type:
         description: 'Build Variant (userdebug or user)'
         required: true
@@ -30,9 +39,11 @@ jobs:
           chmod 600 ~/.crave/crave.conf
 
       - name: Execute Build on Crave Cloud
+        env:
+          BRANCH: ${{ github.event.inputs.pixelos_branch }}
         run: |
-          echo "Starting remote compilation on Crave high-performance cluster..."
-          crave run --no-patch -- "bash scripts/crave_build.sh"
+          echo "Starting remote compilation on Crave high-performance cluster for branch $BRANCH..."
+          crave run --no-patch -- "BRANCH=$BRANCH bash scripts/crave_build.sh"
 
       - name: Pull and Upload Flashable ROM
         run: |
