@@ -55,7 +55,7 @@ jobs:
 
       - name: Extreme Heavyweight Software & Database Purge (Reclaim ~30 GB)
         run: |
-          echo "=== Purging heavy browsers, SDKs, and SQL databases ==="
+          echo "=== Purging heavy browsers, SDKs, databases, and unused runtimes ==="
           sudo apt-get purge -y \
             azure-cli \
             google-cloud-sdk \
@@ -67,9 +67,14 @@ jobs:
             mongodb-org* \
             libpq-dev \
             nginx \
-            apache2* 2>/dev/null || true
+            apache2* \
+            ant ant-optional \
+            kubectl \
+            helm \
+            subversion \
+            mercurial 2>/dev/null || true
           
-          # Delete massive system toolcaches and SDKs
+          # Delete massive system toolcaches, old compilers, and unused language runtimes
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
@@ -83,13 +88,19 @@ jobs:
           sudo rm -rf /usr/local/julia*
           sudo rm -rf /usr/local/lib/node_modules
           sudo rm -rf /usr/share/miniconda
+          sudo rm -rf /usr/share/php*
+          sudo rm -rf /usr/share/sbt*
+          sudo rm -rf /usr/share/gradle*
+          sudo rm -rf /usr/share/apache-maven*
+          sudo rm -rf /usr/lib/jvm/temurin-*
+          sudo rm -rf /usr/lib/jvm/zulu-*
           sudo rm -rf /var/cache/apt/*
           sudo rm -rf /var/lib/mysql
           sudo rm -rf /var/lib/postgresql
           sudo rm -rf /var/log/*
           sudo apt-get clean
           sudo apt-get autoremove -y --purge
-          echo "=== Free space after extreme database & SDK purge ==="
+          echo "=== Free space after extreme database, toolchain & SDK purge ==="
           df -h
 
       - name: Setup Build Environment & Dependencies
@@ -140,7 +151,7 @@ jobs:
           cd $WORK_DIR
           echo "=== Storage before stripping ==="
           df -h
-          # Purge unused architectures and heavy test suites that consume 25+ GB
+          # Purge unused architectures, non-Linux toolchains, and heavy test suites (reclaims 35+ GB)
           rm -rf cts
           rm -rf pdk
           rm -rf toolchain
@@ -148,6 +159,8 @@ jobs:
           rm -rf prebuilts/clang/host/darwin-x86
           rm -rf prebuilts/gcc/darwin-x86
           rm -rf prebuilts/gcc/linux-x86/arm
+          rm -rf prebuilts/gcc/linux-x86/mips
+          rm -rf prebuilts/gcc/linux-x86/x86
           # Strip git objects from .repo (saves ~40 GB)
           find .repo/projects -type d -name "objects" -prune -exec rm -rf {} + 2>/dev/null || true
           find .repo/project-objects -type d -name "objects" -prune -exec rm -rf {} + 2>/dev/null || true
@@ -195,6 +208,10 @@ jobs:
           cd $WORK_DIR
           source build/envsetup.sh
           lunch pixelos_kj7-userdebug
+          # Build-time symbol & intermediate optimization flags
+          export TARGET_BUILD_VARIANT=userdebug
+          export SKIP_BOOT_JARS_CHECK=true
+          export DONT_UNCOMPRESS_PRIV_APPS_DEXS=true
           # Background monitor that auto-strips bloated debug symbols from out/ during compile
           (
             while true; do
