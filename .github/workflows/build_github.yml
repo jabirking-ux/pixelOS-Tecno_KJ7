@@ -40,10 +40,30 @@ jobs:
           remove-docker-images: 'true'
           overprovision-lvm: 'true'
 
+      - name: Unmount and Completely Purge Snaps (Fix Read-only error)
+        run: |
+          echo "=== Disk space before unmounting snaps ==="
+          df -h
+          # 1. Stop snapd services cleanly
+          sudo systemctl disable --now snapd.service snapd.socket 2>/dev/null || true
+          
+          # 2. Force lazy unmount all read-only snap loop mounts
+          for m in /snap/*/*; do
+            if mountpoint -q "$m"; then
+              sudo umount -l "$m" 2>/dev/null || true
+            fi
+          done
+          
+          # 3. Purge snapd via apt
+          sudo apt-get purge -y snapd 2>/dev/null || true
+          
+          # 4. Now safely delete all snap directories without read-only block
+          sudo rm -rf /snap /var/snap /var/lib/snapd /var/cache/snapd ~/snap 2>/dev/null || true
+          echo "=== Disk space after snap purge ==="
+          df -h
+
       - name: Extreme Purge (Zero Bloatware)
         run: |
-          echo "=== Disk space before extreme purge ==="
-          df -h
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
@@ -57,11 +77,9 @@ jobs:
           sudo rm -rf /usr/local/lib/node_modules
           sudo rm -rf /usr/share/miniconda
           sudo rm -rf /var/cache/apt/*
-          sudo rm -rf /var/lib/snapd
-          sudo rm -rf /snap
           sudo apt-get clean
           sudo apt-get autoremove -y --purge
-          echo "=== Disk space after extreme purge ==="
+          echo "=== Usable disk after full purge ==="
           df -h
 
       - name: Setup Build Environment & Dependencies
@@ -85,6 +103,7 @@ jobs:
           TARGET_DIR=$(test -d /workdir && echo "/workdir/pixelos" || echo "$HOME/pixelos")
           echo "WORK_DIR=$TARGET_DIR" >> $GITHUB_ENV
           cd $TARGET_DIR
+          # --depth=1 combined with --partial-clone and --clone-filter=blob:none cuts download size by ~70%
           repo init -u https://github.com/PixelOS-AOSP/manifest.git -b ${{ github.event.inputs.pixelos_branch }} --depth=1 --partial-clone --clone-filter=blob:none < /dev/null || \
           repo init -u https://github.com/PixelOS-AOSP/android_manifest.git -b ${{ github.event.inputs.pixelos_branch }} --depth=1 --partial-clone --clone-filter=blob:none < /dev/null
 
