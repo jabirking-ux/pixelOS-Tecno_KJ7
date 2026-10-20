@@ -53,7 +53,7 @@ jobs:
           sudo apt-get purge -y snapd 2>/dev/null || true
           sudo rm -rf /snap /var/snap /var/lib/snapd /var/cache/snapd ~/snap 2>/dev/null || true
 
-      - name: Extreme Heavyweight Software & Database Purge (Reclaim ~30 GB)
+      - name: Extreme Heavyweight Software & Database Purge
         run: |
           echo "=== Purging heavy browsers, SDKs, databases, and unused runtimes ==="
           sudo apt-get purge -y \
@@ -94,6 +94,11 @@ jobs:
           sudo rm -rf /usr/share/apache-maven*
           sudo rm -rf /usr/lib/jvm/temurin-*
           sudo rm -rf /usr/lib/jvm/zulu-*
+          sudo rm -rf /usr/share/man/*
+          sudo rm -rf /usr/share/doc/*
+          sudo rm -rf /usr/share/info/*
+          sudo rm -rf /usr/share/locale/*
+          sudo rm -rf /usr/share/fonts/*
           sudo rm -rf /var/cache/apt/*
           sudo rm -rf /var/lib/mysql
           sudo rm -rf /var/lib/postgresql
