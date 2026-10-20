@@ -44,29 +44,36 @@ jobs:
         run: |
           echo "=== Disk space before unmounting snaps ==="
           df -h
-          # 1. Stop snapd services cleanly
           sudo systemctl disable --now snapd.service snapd.socket 2>/dev/null || true
-          
-          # 2. Force lazy unmount all read-only snap loop mounts
           for m in /snap/*/*; do
             if mountpoint -q "$m"; then
               sudo umount -l "$m" 2>/dev/null || true
             fi
           done
-          
-          # 3. Purge snapd via apt
           sudo apt-get purge -y snapd 2>/dev/null || true
-          
-          # 4. Now safely delete all snap directories without read-only block
           sudo rm -rf /snap /var/snap /var/lib/snapd /var/cache/snapd ~/snap 2>/dev/null || true
-          echo "=== Disk space after snap purge ==="
-          df -h
 
-      - name: Extreme Purge (Zero Bloatware)
+      - name: Extreme Heavyweight Software & Database Purge (Reclaim ~30 GB)
         run: |
+          echo "=== Purging heavy browsers, SDKs, and SQL databases ==="
+          sudo apt-get purge -y \
+            azure-cli \
+            google-cloud-sdk \
+            google-chrome-stable \
+            firefox \
+            microsoft-edge-stable \
+            mysql-server mysql-client mysql-common \
+            postgresql postgresql-client postgresql-common \
+            mongodb-org* \
+            libpq-dev \
+            nginx \
+            apache2* 2>/dev/null || true
+          
+          # Delete massive system toolcaches and SDKs
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/.ghcup
           sudo rm -rf /opt/hostedtoolcache
           sudo rm -rf /usr/local/share/powershell
           sudo rm -rf /usr/share/swift
@@ -77,9 +84,12 @@ jobs:
           sudo rm -rf /usr/local/lib/node_modules
           sudo rm -rf /usr/share/miniconda
           sudo rm -rf /var/cache/apt/*
+          sudo rm -rf /var/lib/mysql
+          sudo rm -rf /var/lib/postgresql
+          sudo rm -rf /var/log/*
           sudo apt-get clean
           sudo apt-get autoremove -y --purge
-          echo "=== Usable disk after full purge ==="
+          echo "=== Free space after extreme database & SDK purge ==="
           df -h
 
       - name: Setup Build Environment & Dependencies
