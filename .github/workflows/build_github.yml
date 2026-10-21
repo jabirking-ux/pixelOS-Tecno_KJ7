@@ -151,7 +151,7 @@ jobs:
           cd $WORK_DIR
           mkdir -p .repo/local_manifests
           
-          # Comprehensive bloat removal (Car, TV, CTS, VTS, Darwin, Emulators) -> Saves 50+ GB
+          # Comprehensive bloat removal verified for branch seventeen -> Saves 45+ GB
           cat << 'EOF' > .repo/local_manifests/remove_bloat.xml
           <?xml version="1.0" encoding="UTF-8"?>
           <manifest>
@@ -159,17 +159,14 @@ jobs:
             <remove-project name="platform/cts" />
             <remove-project name="platform/pdk" />
             <remove-project name="platform/developers/build" />
-            <remove-project name="platform/developers/demos" />
             <remove-project name="platform/developers/samples/android" />
             <remove-project name="platform/test/vts" />
             <remove-project name="platform/test/vts-testcase/kernel" />
             <remove-project name="platform/test/vts-testcase/hal" />
-            <remove-project name="platform/test/vts-testcase/hal-trace" />
             <remove-project name="platform/test/vts-testcase/security" />
             <remove-project name="platform/test/vts-testcase/performance" />
             <remove-project name="platform/test/vts-testcase/vndk" />
             <remove-project name="platform/tools/test/connectivity" />
-            <remove-project name="platform/tools/test/graphicsbenchmark" />
             
             <!-- Android Auto / Car Apps -->
             <remove-project name="platform/packages/apps/Car/SystemUI" />
@@ -184,7 +181,6 @@ jobs:
             <remove-project name="platform/packages/apps/Car/MessengerPrebuilt" />
             <remove-project name="platform/packages/apps/Car/Notification" />
             <remove-project name="platform/packages/apps/Car/Provision" />
-            <remove-project name="platform/packages/apps/Car/Radio" />
             <remove-project name="platform/packages/apps/Car/RotaryController" />
             <remove-project name="platform/packages/apps/Car/Settings" />
             <remove-project name="platform/packages/apps/Car/SettingsIntelligence" />
@@ -198,7 +194,6 @@ jobs:
             <!-- Unused Generic Architectures & Emulators -->
             <remove-project name="platform/prebuilts/android-emulator" />
             <remove-project name="platform/prebuilts/clang/host/darwin-x86" />
-            <remove-project name="platform/prebuilts/bazel/darwin-x86_64" />
             <remove-project name="platform/prebuilts/go/darwin-x86" />
             <remove-project name="device/amlogic/yukawa" />
             <remove-project name="device/amlogic/yukawa-kernel" />
@@ -206,13 +201,6 @@ jobs:
             <remove-project name="device/generic/armv7-a-neon" />
             <remove-project name="device/generic/car" />
             <remove-project name="device/generic/goldfish" />
-            <remove-project name="device/generic/goldfish-opengl" />
-            <remove-project name="device/generic/mini-emulator-arm64" />
-            <remove-project name="device/generic/mini-emulator-armv7-a-neon" />
-            <remove-project name="device/generic/mini-emulator-x86" />
-            <remove-project name="device/generic/mini-emulator-x86_64" />
-            <remove-project name="device/generic/qemu" />
-            <remove-project name="device/generic/uml" />
             <remove-project name="device/generic/x86" />
             <remove-project name="device/generic/x86_64" />
           </manifest>
