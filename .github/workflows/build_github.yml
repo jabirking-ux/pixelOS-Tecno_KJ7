@@ -135,15 +135,15 @@ jobs:
       - name: Initialize Transparently Compressed Btrfs Build Volume (Saves 60-80+ GB)
         run: |
           TARGET_DIR="$GITHUB_WORKSPACE/pixelos"
-          mkdir -p "$TARGET_DIR"
+          BACKING_DIR="$GITHUB_WORKSPACE/btrfs_backing"
+          mkdir -p "$TARGET_DIR" "$BACKING_DIR"
           echo "WORK_DIR=$TARGET_DIR" >> $GITHUB_ENV
           
-          echo "=== Setting up 120GB sparse Btrfs filesystem with zstd:1 transparent compression ==="
-          sudo mkdir -p /mnt/compressed_btrfs
-          sudo truncate -s 120G /mnt/compressed_btrfs/btrfs_build.img
-          sudo mkfs.btrfs -m single /mnt/compressed_btrfs/btrfs_build.img
+          echo "=== Setting up 120GB sparse Btrfs filesystem on maximized LVM with zstd:3 transparent compression ==="
+          sudo truncate -s 120G "$BACKING_DIR/btrfs_build.img"
+          sudo mkfs.btrfs -m single "$BACKING_DIR/btrfs_build.img"
           
-          sudo mount -o loop,compress=zstd:1,noatime,nodiratime,space_cache=v2 /mnt/compressed_btrfs/btrfs_build.img "$TARGET_DIR"
+          sudo mount -o loop,compress=zstd:3,noatime,nodiratime,space_cache=v2 "$BACKING_DIR/btrfs_build.img" "$TARGET_DIR"
           sudo chown -R $(id -u):$(id -g) "$TARGET_DIR"
           
           cd "$TARGET_DIR"
@@ -155,7 +155,7 @@ jobs:
             --partial-clone \
             --clone-filter=blob:none < /dev/null
 
-      - name: Inject Massive Bloat Removal Local Manifest (Saves 45+ GB)
+      - name: Inject Safe Bloat Removal Local Manifest (Saves 45+ GB)
         run: |
           cd $WORK_DIR
           mkdir -p .repo/local_manifests
@@ -163,7 +163,7 @@ jobs:
           cat << 'EOF' > .repo/local_manifests/remove_bloat.xml
           <?xml version="1.0" encoding="UTF-8"?>
           <manifest>
-            <!-- Heavy Test Suites & Testing Frameworks (~6 GB) -->
+            <!-- Heavy Test Suites & Testing Frameworks (100% Safe - only used by 'm cts/vts', not 'm bacon') (~6 GB) -->
             <remove-project name="platform/cts" />
             <remove-project name="platform/pdk" />
             <remove-project name="platform/developers/build" />
@@ -179,7 +179,7 @@ jobs:
             <remove-project name="platform/tools/tradefederation/contrib" />
             <remove-project name="platform/tools/tradefederation/prebuilts" />
 
-            <!-- Non-Production Test Suites & Software Rasterizers (~10 GB) -->
+            <!-- Non-Production Test Frameworks & Debug Tooling (100% Safe) (~10 GB) -->
             <remove-project name="platform/external/deqp" />
             <remove-project name="platform/external/deqp-deps/amber" />
             <remove-project name="platform/external/deqp-deps/glslang" />
@@ -193,7 +193,7 @@ jobs:
             <remove-project name="platform/external/iperf3" />
             <remove-project name="platform/packages/apps/Test/connectivity" />
 
-            <!-- Stock AOSP Apps Replaced by Pixel GMS Apps (~8 GB) -->
+            <!-- Stock AOSP Apps Replaced by Pixel GMS Apps (100% Safe) (~8 GB) -->
             <remove-project name="platform/packages/apps/Browser2" />
             <remove-project name="platform/packages/apps/Calendar" />
             <remove-project name="platform/packages/apps/Camera2" />
@@ -215,7 +215,7 @@ jobs:
             <remove-project name="platform/packages/services/AlternativeNetworkAccess" />
             <remove-project name="platform/packages/services/Mms" />
 
-            <!-- Unneeded Tooling & Simulation Repositories (~3 GB) -->
+            <!-- Unneeded Tooling & Simulation Repositories (100% Safe) (~3 GB) -->
             <remove-project name="platform/tools/doc_generation" />
             <remove-project name="platform/tools/currysrc" />
             <remove-project name="platform/tools/trebuchet" />
@@ -226,7 +226,7 @@ jobs:
             <remove-project name="platform/tools/ndkports" />
             <remove-project name="platform/tools/loganalysis" />
             
-            <!-- Android Auto / Car Apps (~3 GB) -->
+            <!-- Android Auto / Car Apps (100% Safe - phone build doesn't use Car) (~3 GB) -->
             <remove-project name="platform/packages/apps/Car/SystemUI" />
             <remove-project name="platform/packages/apps/Car/Cluster" />
             <remove-project name="platform/packages/apps/Car/DebuggingRestrictionController" />
@@ -245,11 +245,11 @@ jobs:
             <remove-project name="platform/packages/apps/Car/systemlibs" />
             <remove-project name="platform/packages/apps/Car/SystemUpdater" />
 
-            <!-- Android TV Apps -->
+            <!-- Android TV Apps (100% Safe) -->
             <remove-project name="platform/packages/apps/TvSettings" />
             <remove-project name="platform/packages/apps/TvSystemUI" />
 
-            <!-- Emulators & Virtual Devices (~4 GB) -->
+            <!-- Emulators & Virtual Devices (100% Safe - Tecno KJ7 is physical MediaTek hardware) (~4 GB) -->
             <remove-project name="platform/prebuilts/android-emulator" />
             <remove-project name="device/google/cuttlefish" />
             <remove-project name="device/google/cuttlefish_prebuilts" />
@@ -271,15 +271,15 @@ jobs:
             <remove-project name="device/linaro/hikey" />
             <remove-project name="device/linaro/hikey-kernel" />
 
-            <!-- Unused Darwin Toolchains (~2 GB) -->
+            <!-- Unused Darwin Toolchains (100% Safe - runner is Linux) (~2 GB) -->
             <remove-project name="platform/prebuilts/clang/host/darwin-x86" />
             <remove-project name="platform/prebuilts/go/darwin-x86" />
 
-            <!-- Unused Inline Kernel Clang (Tecno KJ7 uses prebuilt kernel Image.gz) (~4.5 GB) -->
+            <!-- Unused Inline Kernel Clang (100% Safe - Tecno KJ7 uses prebuilt kernel Image.gz) (~4.5 GB) -->
             <remove-project name="LineageOS/android_prebuilts_clang_kernel_linux-x86_clang-r416183b" />
             <remove-project name="kernel/prebuilts/build-tools" />
 
-            <!-- Unused Qualcomm CAF HALs (Tecno KJ7 is MediaTek Helio G99) (~10 GB) -->
+            <!-- Unused Qualcomm CAF HALs (100% Safe - Tecno KJ7 is MediaTek Helio G99 MT6789) (~10 GB) -->
             <remove-project name="platform/hardware/qcom/wlan" />
             <remove-project name="LineageOS/android_hardware_qcom_sm7250_display" />
             <remove-project name="LineageOS/android_hardware_qcom_sm7250_gps" />
@@ -325,7 +325,7 @@ jobs:
             <remove-project name="LineageOS/android_vendor_qcom_opensource_vibrator" />
             <remove-project name="LineageOS/android_vendor_codeaurora_telephony" />
 
-            <!-- Trusty OS Firmware & Trees (~2 GB) -->
+            <!-- Trusty OS Firmware & Trees (100% Safe) (~2 GB) -->
             <remove-project name="trusty/external/trusted-firmware-a" />
             <remove-project name="trusty/external/trusty" />
             <remove-project name="trusty/external/headers" />
