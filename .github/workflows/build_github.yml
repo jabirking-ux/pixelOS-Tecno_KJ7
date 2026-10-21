@@ -6,12 +6,12 @@ on:
       pixelos_branch:
         description: 'PixelOS Branch'
         required: true
-        default: 'fourteen'
+        default: 'fourteen-qpr1'
         type: choice
         options:
+          - fourteen-qpr1
           - fourteen
           - fifteen
-          - seventeen
       build_target:
         description: 'Build Target'
         required: true
@@ -131,27 +131,64 @@ jobs:
           cd "$TARGET_DIR"
           echo "=== Target directory disk free ==="
           df -h .
-          repo init -u https://github.com/PixelOS-AOSP/manifest.git -b ${{ github.event.inputs.pixelos_branch }} \
-            --groups=default,-mips,-x86,-darwin,-emulator,-notdefault,-tests,-cts \
-            --depth=1 \
-            --partial-clone \
-            --clone-filter=blob:none < /dev/null || \
-          repo init -u https://github.com/PixelOS-AOSP/android_manifest.git -b ${{ github.event.inputs.pixelos_branch }} \
-            --groups=default,-mips,-x86,-darwin,-emulator,-notdefault,-tests,-cts \
+          repo init -u https://github.com/PixelOS-Fourteen/manifest.git -b ${{ github.event.inputs.pixelos_branch }} \
+            --groups=default,-mips,-x86,-darwin,-emulator,-notdefault,-tests,-cts,-device \
             --depth=1 \
             --partial-clone \
             --clone-filter=blob:none < /dev/null
 
-      - name: Inject Local Tecno KJ7 Manifest
+      - name: Inject Local Manifests (Tecno KJ7 + Unneeded Trees Purge)
         run: |
           cd $WORK_DIR
           mkdir -p .repo/local_manifests
+          
+          # 1. Device tree, Vendor tree, Kernel tree
           cat << 'EOF' > .repo/local_manifests/kj7.xml
           <?xml version="1.0" encoding="UTF-8"?>
           <manifest>
             <project path="device/tecno/kj7" name="RapStuff/android_device_tecno_kj7" revision="lineage-23.0" remote="github" />
             <project path="vendor/tecno/kj7" name="RapStuff/android_vendor_tecno_kj7" revision="lineage-22.1" remote="github" />
             <project path="kernel/tecno/kj7" name="RapStuff/android_kernel_tecno_kj7" revision="lineage-23.0" remote="github" />
+          </manifest>
+          EOF
+
+          # 2. Drop multi-gigabyte unneeded trees that waste 40+ GB during repo sync
+          cat << 'EOF' > .repo/local_manifests/remove_bloat.xml
+          <?xml version="1.0" encoding="UTF-8"?>
+          <manifest>
+            <remove-project name="platform/cts" />
+            <remove-project name="platform/pdk" />
+            <remove-project name="platform/developers/build" />
+            <remove-project name="platform/developers/demos" />
+            <remove-project name="platform/developers/samples/android" />
+            <remove-project name="platform/test/vts" />
+            <remove-project name="platform/test/vts-testcase/kernel" />
+            <remove-project name="platform/test/vts-testcase/hal" />
+            <remove-project name="platform/test/vts-testcase/hal-trace" />
+            <remove-project name="platform/test/vts-testcase/security" />
+            <remove-project name="platform/test/vts-testcase/performance" />
+            <remove-project name="platform/test/vts-testcase/vndk" />
+            <remove-project name="platform/tools/test/connectivity" />
+            <remove-project name="platform/tools/test/graphicsbenchmark" />
+            <remove-project name="platform/prebuilts/android-emulator" />
+            <remove-project name="platform/prebuilts/clang/host/darwin-x86" />
+            <remove-project name="platform/prebuilts/bazel/darwin-x86_64" />
+            <remove-project name="platform/prebuilts/go/darwin-x86" />
+            <remove-project name="device/amlogic/yukawa" />
+            <remove-project name="device/amlogic/yukawa-kernel" />
+            <remove-project name="device/generic/arm64" />
+            <remove-project name="device/generic/armv7-a-neon" />
+            <remove-project name="device/generic/car" />
+            <remove-project name="device/generic/goldfish" />
+            <remove-project name="device/generic/goldfish-opengl" />
+            <remove-project name="device/generic/mini-emulator-arm64" />
+            <remove-project name="device/generic/mini-emulator-armv7-a-neon" />
+            <remove-project name="device/generic/mini-emulator-x86" />
+            <remove-project name="device/generic/mini-emulator-x86_64" />
+            <remove-project name="device/generic/qemu" />
+            <remove-project name="device/generic/uml" />
+            <remove-project name="device/generic/x86" />
+            <remove-project name="device/generic/x86_64" />
           </manifest>
           EOF
 
@@ -216,7 +253,6 @@ jobs:
           source build/envsetup.sh
           lunch pixelos_kj7-userdebug
           
-          # Space Saving Build Environment Flags:
           export TARGET_BUILD_VARIANT=userdebug
           export SKIP_BOOT_JARS_CHECK=true
           export DONT_UNCOMPRESS_PRIV_APPS_DEXS=true
@@ -225,7 +261,6 @@ jobs:
           export USE_CCACHE=0
           export SOONG_GEN_COMPDB=0
           
-          # Real-time background pruner to keep out/ lean during compilation
           (
             while true; do
               sleep 120
