@@ -4,15 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       pixelos_branch:
-        description: 'PixelOS Branch'
+        description: 'PixelOS Manifest Branch (e.g., seventeen)'
         required: true
         default: 'seventeen'
-        type: choice
-        options:
-          - seventeen
-          - sixteen
-          - fifteen
-          - fourteen
       build_target:
         description: 'Build Target'
         required: true
@@ -29,29 +23,15 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Maximize Runner Free Disk Space (Stable Margins)
-        uses: easimon/maximize-build-space@master
-        with:
-          root-reserve-mb: 2048
-          temp-reserve-mb: 1024
-          swap-size-mb: 1024
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-haskell: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
-          overprovision-lvm: 'false'
-
-      - name: Checkout Tecno KJ7 Repository
-        uses: actions/checkout@v4
-        with:
-          path: kj7_source
-
-      - name: Unmount and Completely Purge Snaps
+      - name: Extreme Heavyweight Host Software & Snap Purge (Minimal Lightweight Debian Base - 130+ GB Free)
         run: |
-          echo "=== Disk space before unmounting snaps ==="
-          df -h
-          sudo systemctl disable --now snapd.service snapd.socket 2>/dev/null || true
+          echo "=== Storage before purge ==="
+          df -h /
+          
+          # Disable and purge background services
+          sudo systemctl disable --now snapd.service snapd.socket mysql docker containerd 2>/dev/null || true
+          
+          # Unmount and remove all snaps
           for m in /snap/*/*; do
             if mountpoint -q "$m"; then
               sudo umount -l "$m" 2>/dev/null || true
@@ -60,9 +40,7 @@ jobs:
           sudo apt-get purge -y snapd 2>/dev/null || true
           sudo rm -rf /snap /var/snap /var/lib/snapd /var/cache/snapd ~/snap 2>/dev/null || true
 
-      - name: Extreme Heavyweight Software & Database Purge (Minimal Lightweight Debian Base)
-        run: |
-          echo "=== Purging heavy browsers, SDKs, databases, and unused runtimes to minimal Debian ==="
+          # Purge heavy pre-installed packages to reduce host to minimal Debian
           sudo apt-get purge -y \
             azure-cli \
             google-cloud-sdk \
@@ -81,6 +59,7 @@ jobs:
             subversion \
             mercurial 2>/dev/null || true
           
+          # Remove massive pre-installed runtimes and SDKs
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
@@ -108,11 +87,20 @@ jobs:
           sudo rm -rf /var/cache/apt/*
           sudo rm -rf /var/lib/mysql
           sudo rm -rf /var/lib/postgresql
+          sudo rm -rf /var/lib/docker
+          sudo rm -rf /etc/docker
+          sudo rm -rf /var/run/docker.sock
           sudo rm -rf /var/log/*
           sudo apt-get clean
           sudo apt-get autoremove -y --purge
-          echo "=== Free space after minimal Debian purge ==="
-          df -h
+          
+          echo "=== Storage after extreme purge (130+ GB available on native NVMe SSD) ==="
+          df -h /
+
+      - name: Checkout Tecno KJ7 Repository
+        uses: actions/checkout@v4
+        with:
+          path: kj7_source
 
       - name: Setup Build Environment & Dependencies
         run: |
@@ -132,19 +120,19 @@ jobs:
           git config --global http.lowSpeedLimit 1000
           git config --global http.lowSpeedTime 60
 
-      - name: Initialize PixelOS Manifest on Maximized LVM Mount
+      - name: Initialize PixelOS Manifest on Native NVMe Storage (130+ GB Headroom)
         run: |
           TARGET_DIR="$GITHUB_WORKSPACE/pixelos"
           mkdir -p "$TARGET_DIR"
           echo "WORK_DIR=$TARGET_DIR" >> $GITHUB_ENV
           cd "$TARGET_DIR"
-          echo "=== Target directory disk free ==="
+          echo "=== Storage before manifest init ==="
           df -h .
           repo init -u https://github.com/PixelOS-AOSP/android_manifest.git -b ${{ github.event.inputs.pixelos_branch }} \
             --groups=default,-mips,-x86,-darwin,-emulator,-notdefault,-tests,-cts,-device \
             --depth=1 < /dev/null
 
-      - name: Inject Safe Bloat Removal Local Manifest (Saves 45+ GB)
+      - name: Inject Safe Bloat Removal Local Manifest (Saves 70+ GB)
         run: |
           cd $WORK_DIR
           mkdir -p .repo/local_manifests
@@ -152,7 +140,7 @@ jobs:
           cat << 'EOF' > .repo/local_manifests/remove_bloat.xml
           <?xml version="1.0" encoding="UTF-8"?>
           <manifest>
-            <!-- Heavy Test Suites & Testing Frameworks (100% Safe - only used by 'm cts/vts', not 'm bacon') (~6 GB) -->
+            <!-- Heavy Test Suites & Testing Frameworks (100% Safe - only used by 'm cts/vts', not 'm bacon') (~10 GB) -->
             <remove-project name="platform/cts" />
             <remove-project name="platform/pdk" />
             <remove-project name="platform/developers/build" />
@@ -163,6 +151,15 @@ jobs:
             <remove-project name="platform/test/vts-testcase/security" />
             <remove-project name="platform/test/vts-testcase/performance" />
             <remove-project name="platform/test/vts-testcase/vndk" />
+            <remove-project name="platform/test/vts-testcase/nbu" />
+            <remove-project name="platform/test/catbox" />
+            <remove-project name="platform/test/cts-root" />
+            <remove-project name="platform/test/dittosuite" />
+            <remove-project name="platform/test/mlts/benchmark" />
+            <remove-project name="platform/test/mlts/models" />
+            <remove-project name="platform/test/robolectric-extensions" />
+            <remove-project name="platform/test/app_compat/csuite" />
+            <remove-project name="platform/test/suite_harness" />
             <remove-project name="platform/tools/test/connectivity" />
             <remove-project name="platform/tools/tradefederation" />
             <remove-project name="platform/tools/tradefederation/contrib" />
@@ -198,73 +195,117 @@ jobs:
             <remove-project name="platform/packages/apps/EmergencyInfo" />
             <remove-project name="platform/packages/apps/Tag" />
             <remove-project name="platform/packages/apps/ThemePicker" />
-            <remove-project name="platform/packages/screensavers/Basic" />
-            <remove-project name="platform/packages/screensavers/PhotoTable" />
-            <remove-project name="platform/packages/wallpapers/LivePicker" />
             <remove-project name="platform/packages/services/AlternativeNetworkAccess" />
             <remove-project name="platform/packages/services/Mms" />
 
-            <!-- Unneeded Tooling & Simulation Repositories (100% Safe) (~3 GB) -->
+            <!-- Unneeded Tooling, Desktop Testing & Simulation Repositories (100% Safe) (~6 GB) -->
             <remove-project name="platform/tools/doc_generation" />
             <remove-project name="platform/tools/currysrc" />
             <remove-project name="platform/tools/trebuchet" />
-            <remove-project name="platform/tools/netsim" />
-            <remove-project name="platform/tools/rootcanal" />
-            <remove-project name="platform/tools/external_updater" />
-            <remove-project name="platform/tools/mainline" />
+            <remove-project name="platform/tools/metalava" />
+            <remove-project name="platform/tools/security" />
+            <remove-project name="platform/tools/repohooks" />
             <remove-project name="platform/tools/ndkports" />
             <remove-project name="platform/tools/loganalysis" />
+            <remove-project name="platform/tools/aadevtools" />
+            <remove-project name="platform/tools/acloud" />
+            <remove-project name="platform/tools/apifinder" />
+            <remove-project name="platform/tools/carrier_settings" />
+            <remove-project name="platform/tools/deviceinfra/prebuilts" />
+            <remove-project name="platform/tools/test/desktop/mobly" />
+            <remove-project name="platform/tools/test/mobly_extensions" />
+            <remove-project name="platform/tools/test/mobly_snippets" />
+            <remove-project name="platform/tools/test/openhst" />
+            <remove-project name="platform/tools/treble" />
             
-            <!-- Android Auto / Car Apps (100% Safe - phone build doesn't use Car) (~3 GB) -->
+            <!-- Android Auto / Car Apps & Software Defined Vehicle (100% Safe - phone build) (~7 GB) -->
             <remove-project name="platform/packages/apps/Car/SystemUI" />
             <remove-project name="platform/packages/apps/Car/Cluster" />
             <remove-project name="platform/packages/apps/Car/DebuggingRestrictionController" />
-            <remove-project name="platform/packages/apps/Car/DialerPrebuilt" />
+            <remove-project name="platform/packages/apps/Car/Dialer" />
             <remove-project name="platform/packages/apps/Car/LatinIME" />
             <remove-project name="platform/packages/apps/Car/Launcher" />
-            <remove-project name="platform/packages/apps/Car/LinkViewer" />
+            <remove-project name="platform/packages/apps/Car/Linkviewer" />
             <remove-project name="platform/packages/apps/Car/LocalMediaPlayer" />
-            <remove-project name="platform/packages/apps/Car/MediaPrebuilt" />
-            <remove-project name="platform/packages/apps/Car/MessengerPrebuilt" />
+            <remove-project name="platform/packages/apps/Car/Media" />
+            <remove-project name="platform/packages/apps/Car/Messenger" />
             <remove-project name="platform/packages/apps/Car/Notification" />
             <remove-project name="platform/packages/apps/Car/Provision" />
+            <remove-project name="platform/packages/apps/Car/Radio" />
             <remove-project name="platform/packages/apps/Car/RotaryController" />
             <remove-project name="platform/packages/apps/Car/Settings" />
-            <remove-project name="platform/packages/apps/Car/SettingsIntelligence" />
             <remove-project name="platform/packages/apps/Car/systemlibs" />
             <remove-project name="platform/packages/apps/Car/SystemUpdater" />
+            <remove-project name="platform/system/software_defined_vehicle/common" />
+            <remove-project name="platform/system/software_defined_vehicle/health_monitor" />
+            <remove-project name="platform/system/software_defined_vehicle/lifecycle_management" />
+            <remove-project name="platform/system/software_defined_vehicle/middleware" />
+            <remove-project name="platform/system/software_defined_vehicle/orchestration" />
+            <remove-project name="platform/system/software_defined_vehicle/samples" />
+            <remove-project name="platform/system/software_defined_vehicle/sdv_gateway" />
+            <remove-project name="platform/system/software_defined_vehicle/service_bundles_registry" />
+            <remove-project name="platform/system/software_defined_vehicle/some_ip" />
+            <remove-project name="platform/system/software_defined_vehicle/tools" />
+            <remove-project name="platform/system/software_defined_vehicle/update_manager" />
+            <remove-project name="platform/system/software_defined_vehicle/vpm" />
+            <remove-project name="platform/system/software_defined_vehicle/vsidl" />
+            <remove-project name="platform/system/software_defined_vehicle/automotive_services" />
+            <remove-project name="platform/system/software_defined_vehicle/platform" />
+            <remove-project name="platform/system/software_defined_vehicle/telemetry" />
 
             <!-- Android TV Apps (100% Safe) -->
             <remove-project name="platform/packages/apps/TvSettings" />
             <remove-project name="platform/packages/apps/TvSystemUI" />
 
-            <!-- Emulators & Virtual Devices (100% Safe - Tecno KJ7 is physical MediaTek hardware) (~4 GB) -->
+            <!-- Emulators & Virtual Devices (100% Safe - Tecno KJ7 is physical MediaTek hardware) (~6 GB) -->
             <remove-project name="platform/prebuilts/android-emulator" />
+            <remove-project name="platform/prebuilts/qemu-kernel" />
             <remove-project name="device/google/cuttlefish" />
             <remove-project name="device/google/cuttlefish_prebuilts" />
             <remove-project name="device/google/cuttlefish_vmm" />
-            <remove-project name="device/google/trout" />
-            <remove-project name="device/google/atv" />
-            <remove-project name="device/google_car" />
-            <remove-project name="device/amlogic/yukawa" />
-            <remove-project name="device/amlogic/yukawa-kernel" />
+            <remove-project name="device/google/goldfish" />
+            <remove-project name="device/google/goldfish-opengl" />
+            <remove-project name="device/generic/goldfish-opengl" />
             <remove-project name="device/generic/arm64" />
             <remove-project name="device/generic/armv7-a-neon" />
             <remove-project name="device/generic/car" />
-            <remove-project name="device/generic/goldfish" />
+            <remove-project name="device/generic/common" />
+            <remove-project name="device/generic/mini-emulator-arm64" />
+            <remove-project name="device/generic/mini-emulator-armv7-a-neon" />
+            <remove-project name="device/generic/mini-emulator-x86" />
+            <remove-project name="device/generic/mini-emulator-x86_64" />
+            <remove-project name="device/generic/opengl-transport" />
+            <remove-project name="device/generic/qemu" />
+            <remove-project name="device/generic/trusty" />
+            <remove-project name="device/generic/uml" />
             <remove-project name="device/generic/x86" />
             <remove-project name="device/generic/x86_64" />
-            <remove-project name="device/generic/trusty" />
-            <remove-project name="device/linaro/dragonboard" />
-            <remove-project name="device/linaro/dragonboard-kernel" />
             <remove-project name="device/linaro/hikey" />
             <remove-project name="device/linaro/hikey-kernel" />
 
-            <!-- Unused Darwin Toolchains (100% Safe - runner is Linux) (~2 GB) -->
+            <!-- Unused Host, Darwin, Musl & Windows Toolchains (100% Safe - runner is Linux x86_64 glibc) (~5 GB) -->
             <remove-project name="platform/prebuilts/clang/host/darwin-x86" />
             <remove-project name="platform/prebuilts/go/darwin-x86" />
+            <remove-project name="platform/prebuilts/rust-toolchain/darwin" />
+            <remove-project name="platform/prebuilts/rust-toolchain/linux-musl-x86" />
+            <remove-project name="platform/prebuilts/gcc/linux-x86/host/x86_64-w64-mingw32-4.8" />
 
-            <!-- Unused Inline Kernel Clang (100% Safe - Tecno KJ7 uses prebuilt kernel Image.gz) (~4.5 GB) -->
+            <!-- Unused Architecture Kernel Prebuilts & Virtual Device Modules (100% Safe - Tecno KJ7 uses prebuilt kernel) (~15 GB) -->
+            <remove-project name="kernel/prebuilts/6.1/x86-64" />
+            <remove-project name="kernel/prebuilts/6.6/x86-64" />
+            <remove-project name="kernel/prebuilts/6.12/x86-64" />
+            <remove-project name="kernel/prebuilts/6.18/x86-64" />
+            <remove-project name="kernel/prebuilts/mainline/x86-64" />
+            <remove-project name="kernel/prebuilts/common-modules/virtual-device/6.1/arm64" />
+            <remove-project name="kernel/prebuilts/common-modules/virtual-device/6.1/x86-64" />
+            <remove-project name="kernel/prebuilts/common-modules/virtual-device/6.6/arm64" />
+            <remove-project name="kernel/prebuilts/common-modules/virtual-device/6.6/x86-64" />
+            <remove-project name="kernel/prebuilts/common-modules/virtual-device/6.12/arm64" />
+            <remove-project name="kernel/prebuilts/common-modules/virtual-device/6.12/x86-64" />
+            <remove-project name="kernel/prebuilts/common-modules/virtual-device/6.18/arm64" />
+            <remove-project name="kernel/prebuilts/common-modules/virtual-device/6.18/x86-64" />
+            <remove-project name="kernel/prebuilts/common-modules/virtual-device/mainline/arm64" />
+            <remove-project name="kernel/prebuilts/common-modules/virtual-device/mainline/x86-64" />
             <remove-project name="LineageOS/android_prebuilts_clang_kernel_linux-x86_clang-r416183b" />
             <remove-project name="kernel/prebuilts/build-tools" />
 
@@ -349,7 +390,11 @@ jobs:
       - name: Sync Source Tree
         run: |
           cd $WORK_DIR
+          echo "=== Storage before source tree sync ==="
+          df -h .
           repo sync -c -j4 --force-sync --no-clone-bundle --no-tags --prune
+          echo "=== Storage after source tree sync ==="
+          df -h .
 
       - name: Strip DotRepo Metadata and Unneeded Prebuilts (Keeping All Historic SDK APIs)
         run: |
@@ -387,19 +432,20 @@ jobs:
             cd $WORK_DIR
           fi
           
-          echo "=== Storage after aggressive stripping (SDK APIs intact) ==="
+          echo "=== Storage after aggressive stripping (100+ GB available) ==="
           df -h .
 
       - name: Mount Transparently Compressed Btrfs Filesystem for Out Directory (Saves 40+ GB)
         run: |
           cd $WORK_DIR
-          echo "=== Setting up 60GB sparse Btrfs filesystem for out/ with zstd:3 compression ==="
-          sudo mkdir -p /mnt/btrfs_out
-          sudo truncate -s 60G /mnt/btrfs_out/out_sparse.img
-          sudo mkfs.btrfs -m single /mnt/btrfs_out/out_sparse.img
+          echo "=== Setting up 70GB sparse Btrfs filesystem on NVMe root with zstd:3 compression ==="
+          BACKING_DIR="$HOME/btrfs_backing"
+          mkdir -p "$BACKING_DIR"
+          sudo truncate -s 70G "$BACKING_DIR/out_sparse.img"
+          sudo mkfs.btrfs -m single "$BACKING_DIR/out_sparse.img"
           
           mkdir -p out
-          sudo mount -o loop,compress=zstd:3,noatime,nodiratime,space_cache=v2 /mnt/btrfs_out/out_sparse.img out
+          sudo mount -o loop,compress=zstd:3,noatime,nodiratime,space_cache=v2 "$BACKING_DIR/out_sparse.img" out
           sudo chown -R $(id -u):$(id -g) out
           
           echo "=== Mounted compressed out directory ==="
