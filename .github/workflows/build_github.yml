@@ -146,16 +146,15 @@ jobs:
             --partial-clone \
             --clone-filter=blob:none < /dev/null
 
-      - name: Inject Bloat Removal Local Manifest
+      - name: Inject Massive Bloat Removal Local Manifest (Saves 25+ GB)
         run: |
           cd $WORK_DIR
           mkdir -p .repo/local_manifests
           
-          # Comprehensive bloat removal verified for branch seventeen -> Saves 45+ GB
           cat << 'EOF' > .repo/local_manifests/remove_bloat.xml
           <?xml version="1.0" encoding="UTF-8"?>
           <manifest>
-            <!-- Heavy Test Suites -->
+            <!-- Heavy Test Suites & Testing Frameworks (~6 GB) -->
             <remove-project name="platform/cts" />
             <remove-project name="platform/pdk" />
             <remove-project name="platform/developers/build" />
@@ -167,8 +166,11 @@ jobs:
             <remove-project name="platform/test/vts-testcase/performance" />
             <remove-project name="platform/test/vts-testcase/vndk" />
             <remove-project name="platform/tools/test/connectivity" />
+            <remove-project name="platform/tools/tradefederation" />
+            <remove-project name="platform/tools/tradefederation/contrib" />
+            <remove-project name="platform/tools/tradefederation/prebuilts" />
             
-            <!-- Android Auto / Car Apps -->
+            <!-- Android Auto / Car Apps (~3 GB) -->
             <remove-project name="platform/packages/apps/Car/SystemUI" />
             <remove-project name="platform/packages/apps/Car/Cluster" />
             <remove-project name="platform/packages/apps/Car/DebuggingRestrictionController" />
@@ -191,10 +193,14 @@ jobs:
             <remove-project name="platform/packages/apps/TvSettings" />
             <remove-project name="platform/packages/apps/TvSystemUI" />
 
-            <!-- Unused Generic Architectures & Emulators -->
+            <!-- Emulators & Virtual Devices (~4 GB) -->
             <remove-project name="platform/prebuilts/android-emulator" />
-            <remove-project name="platform/prebuilts/clang/host/darwin-x86" />
-            <remove-project name="platform/prebuilts/go/darwin-x86" />
+            <remove-project name="device/google/cuttlefish" />
+            <remove-project name="device/google/cuttlefish_prebuilts" />
+            <remove-project name="device/google/cuttlefish_vmm" />
+            <remove-project name="device/google/trout" />
+            <remove-project name="device/google/atv" />
+            <remove-project name="device/google_car" />
             <remove-project name="device/amlogic/yukawa" />
             <remove-project name="device/amlogic/yukawa-kernel" />
             <remove-project name="device/generic/arm64" />
@@ -203,6 +209,96 @@ jobs:
             <remove-project name="device/generic/goldfish" />
             <remove-project name="device/generic/x86" />
             <remove-project name="device/generic/x86_64" />
+            <remove-project name="device/generic/trusty" />
+            <remove-project name="device/linaro/dragonboard" />
+            <remove-project name="device/linaro/dragonboard-kernel" />
+            <remove-project name="device/linaro/hikey" />
+            <remove-project name="device/linaro/hikey-kernel" />
+
+            <!-- Unused Darwin Toolchains (~2 GB) -->
+            <remove-project name="platform/prebuilts/clang/host/darwin-x86" />
+            <remove-project name="platform/prebuilts/go/darwin-x86" />
+
+            <!-- Unused Inline Kernel Clang (Tecno KJ7 uses prebuilt kernel Image.gz) (~4.5 GB) -->
+            <remove-project name="LineageOS/android_prebuilts_clang_kernel_linux-x86_clang-r416183b" />
+            <remove-project name="kernel/prebuilts/build-tools" />
+
+            <!-- Unused Qualcomm CAF HALs (Tecno KJ7 is MediaTek Helio G99) (~10 GB) -->
+            <remove-project name="platform/hardware/qcom/wlan" />
+            <remove-project name="LineageOS/android_hardware_qcom_sm7250_display" />
+            <remove-project name="LineageOS/android_hardware_qcom_sm7250_gps" />
+            <remove-project name="LineageOS/android_hardware_qcom_sm8150_display" />
+            <remove-project name="LineageOS/android_hardware_qcom_sm8150_gps" />
+            <remove-project name="LineageOS/android_device_qcom_sepolicy" />
+            <remove-project name="LineageOS/android_device_qcom_sepolicy_vndr" />
+            <remove-project name="LineageOS/android_hardware_qcom_bootctrl" />
+            <remove-project name="LineageOS/android_hardware_qcom-caf_common" />
+            <remove-project name="LineageOS/android_hardware_qcom_audio" />
+            <remove-project name="LineageOS/android_hardware_qcom_display" />
+            <remove-project name="LineageOS/android_hardware_qcom_media" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_agm" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_audioreach-graphservices" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_arpal-lx" />
+            <remove-project name="LineageOS/android_hardware_qcom_audio-ar" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_data-ipa-cfg-mgr" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_dataipa" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_display-core" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_display-intf" />
+            <remove-project name="LineageOS/android_hardware_qcom_thermal" />
+            <remove-project name="LineageOS/android_hardware_qcom_wlan" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_audio-hal_st-hal" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_audio-hal_st-hal-ar" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_audio-commonsys-intf" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_display-commonsys-intf" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_audio" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_display-commonsys" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_fm-commonsys" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_wfd-commonsys" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_core-utils-sys" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_core-utils-vendor" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_dataservices" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_display" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_healthd-ext" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_interfaces" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_libfmjni" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_libqspa" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_libvmmem" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_power" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_thermal-engine" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_usb" />
+            <remove-project name="LineageOS/android_vendor_qcom_opensource_vibrator" />
+            <remove-project name="LineageOS/android_vendor_codeaurora_telephony" />
+
+            <!-- Trusty OS Firmware & Trees (~2 GB) -->
+            <remove-project name="trusty/external/trusted-firmware-a" />
+            <remove-project name="trusty/external/trusty" />
+            <remove-project name="trusty/external/headers" />
+            <remove-project name="trusty/lk/common" />
+            <remove-project name="trusty/external/musl" />
+            <remove-project name="kernel/prebuilts/common-modules/trusty/6.6/arm64" />
+            <remove-project name="kernel/prebuilts/common-modules/trusty/6.12/arm64" />
+            <remove-project name="trusty/device/arm/generic-arm64" />
+            <remove-project name="trusty/device/arm/vexpress-a15" />
+            <remove-project name="trusty/device/common" />
+            <remove-project name="trusty/device/desktop" />
+            <remove-project name="trusty/device/nxp/imx7d" />
+            <remove-project name="trusty/device/x86/generic-x86_64" />
+            <remove-project name="trusty/lk/nxp" />
+            <remove-project name="trusty/host/common" />
+            <remove-project name="trusty/lk/trusty" />
+            <remove-project name="trusty/app/authmgr" />
+            <remove-project name="trusty/app/avb" />
+            <remove-project name="trusty/app/cast-auth" />
+            <remove-project name="trusty/app/confirmationui" />
+            <remove-project name="trusty/app/gatekeeper" />
+            <remove-project name="trusty/app/keymaster" />
+            <remove-project name="trusty/app/keymint" />
+            <remove-project name="trusty/app/sample" />
+            <remove-project name="trusty/app/secretkeeper" />
+            <remove-project name="trusty/app/storage" />
+            <remove-project name="trusty/lib" />
+            <remove-project name="trusty/user/desktop" />
+            <remove-project name="trusty/vendor/google/aosp" />
           </manifest>
           EOF
 
@@ -211,19 +307,28 @@ jobs:
           cd $WORK_DIR
           repo sync -c -j4 --force-sync --no-clone-bundle --no-tags --prune
 
-      - name: Strip DotRepo Metadata and Unneeded Prebuilts
+      - name: Strip DotRepo Metadata and Unneeded Prebuilts (Reclaims 40+ GB)
         run: |
           cd $WORK_DIR
-          echo "=== Storage before .repo elimination ==="
+          echo "=== Storage before stripping .repo and prebuilts ==="
           df -h .
+          
+          # 1. Eliminate the entire .repo folder immediately
           rm -rf .repo
+          
+          # 2. Eliminate unused architectures and legacy compilers
           rm -rf cts pdk toolchain developers sdk
           rm -rf prebuilts/clang/host/darwin-x86
           rm -rf prebuilts/gcc/darwin-x86
           rm -rf prebuilts/gcc/linux-x86/arm
           rm -rf prebuilts/gcc/linux-x86/mips
           rm -rf prebuilts/gcc/linux-x86/x86
-          echo "=== Storage after .repo elimination ==="
+          rm -rf prebuilts/jdk/jdk8 prebuilts/jdk/jdk9 prebuilts/jdk/jdk11 2>/dev/null || true
+          rm -rf prebuilts/rust/linux-x86/*/share/doc 2>/dev/null || true
+          rm -rf prebuilts/vndk 2>/dev/null || true
+          rm -rf prebuilts/ndk 2>/dev/null || true
+          
+          echo "=== Storage after aggressive stripping ==="
           df -h .
 
       - name: Deploy Tecno KJ7 Trees & Device Dependencies
@@ -258,7 +363,7 @@ jobs:
           echo "=== Trees Installed ==="
           ls -ld device/tecno/kj7 vendor/tecno/kj7 kernel/tecno/kj7 device/mediatek/sepolicy_vndr || true
 
-      - name: Compile PixelOS for Tecno KJ7
+      - name: Compile PixelOS for Tecno KJ7 (Continuous Symbol Stripping)
         run: |
           cd $WORK_DIR
           source build/envsetup.sh
@@ -272,11 +377,14 @@ jobs:
           export USE_CCACHE=0
           export SOONG_GEN_COMPDB=0
           
+          # Actively purge intermediate debug symbols and unstripped libs to prevent disk exhaustion
           (
             while true; do
-              sleep 120
-              if [ -d "$WORK_DIR/out/target/product/kj7/symbols" ]; then
-                rm -rf $WORK_DIR/out/target/product/kj7/symbols/* 2>/dev/null || true
+              sleep 90
+              if [ -d "$WORK_DIR/out/target/product/kj7" ]; then
+                rm -rf $WORK_DIR/out/target/product/kj7/symbols 2>/dev/null || true
+                rm -rf $WORK_DIR/out/target/product/kj7/obj/SHARED_LIBRARIES/*_intermediates/LINKED 2>/dev/null || true
+                rm -rf $WORK_DIR/out/target/product/kj7/obj/STATIC_LIBRARIES/*_intermediates/LINKED 2>/dev/null || true
               fi
             done
           ) &
