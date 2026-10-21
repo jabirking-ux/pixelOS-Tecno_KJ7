@@ -28,18 +28,18 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Maximize Runner Free Disk Space (Aggressive Cleanup + LVM)
+      - name: Maximize Runner Free Disk Space (Stable Margins)
         uses: easimon/maximize-build-space@master
         with:
-          root-reserve-mb: 128
-          temp-reserve-mb: 64
-          swap-size-mb: 512
+          root-reserve-mb: 2048
+          temp-reserve-mb: 1024
+          swap-size-mb: 1024
           remove-dotnet: 'true'
           remove-android: 'true'
           remove-haskell: 'true'
           remove-codeql: 'true'
           remove-docker-images: 'true'
-          overprovision-lvm: 'true'
+          overprovision-lvm: 'false'
 
       - name: Unmount and Completely Purge Snaps
         run: |
@@ -206,7 +206,6 @@ jobs:
               BuildFingerprint=TECNO/KJ7-OP/TECNO-KJ7:14/UP1A.231005.007/260112V2294:user/release-keys
           EOF
 
-          # Align physical partition sizes from stock KJ7 audit
           sed -i 's/BOARD_BOOTIMAGE_PARTITION_SIZE := .*/BOARD_BOOTIMAGE_PARTITION_SIZE := 67108864/g' BoardConfig.mk
           sed -i 's/BOARD_SUPER_PARTITION_SIZE := .*/BOARD_SUPER_PARTITION_SIZE := 8870707200/g' BoardConfig.mk
           sed -i 's/BOARD_MEDIATEK_DYNAMIC_PARTITIONS_SIZE := .*/BOARD_MEDIATEK_DYNAMIC_PARTITIONS_SIZE := 8868610048/g' BoardConfig.mk
