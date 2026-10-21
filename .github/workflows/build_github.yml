@@ -118,7 +118,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            bc bison build-essential ccache curl flex g++-multilib gcc-multilib git gnupg gperf \
+            bc bison build-essential btrfs-progs ccache curl flex g++-multilib gcc-multilib git gnupg gperf \
             imagemagick lib32readline-dev lib32z1-dev libelf-dev liblz4-tool libncurses5 libncurses5-dev \
             libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc \
             zip zlib1g-dev python3 openjdk-21-jdk aria2 libtinfo5
@@ -146,7 +146,7 @@ jobs:
             --partial-clone \
             --clone-filter=blob:none < /dev/null
 
-      - name: Inject Massive Bloat Removal Local Manifest (Saves 25+ GB)
+      - name: Inject Massive Bloat Removal Local Manifest (Saves 35+ GB)
         run: |
           cd $WORK_DIR
           mkdir -p .repo/local_manifests
@@ -169,6 +169,39 @@ jobs:
             <remove-project name="platform/tools/tradefederation" />
             <remove-project name="platform/tools/tradefederation/contrib" />
             <remove-project name="platform/tools/tradefederation/prebuilts" />
+
+            <!-- Stock AOSP Apps Replaced by Pixel GMS Apps (~8 GB) -->
+            <remove-project name="platform/packages/apps/Browser2" />
+            <remove-project name="platform/packages/apps/Calendar" />
+            <remove-project name="platform/packages/apps/Camera2" />
+            <remove-project name="platform/packages/apps/Contacts" />
+            <remove-project name="platform/packages/apps/DeskClock" />
+            <remove-project name="platform/packages/apps/Dialer" />
+            <remove-project name="platform/packages/apps/Gallery2" />
+            <remove-project name="platform/packages/apps/HTMLViewer" />
+            <remove-project name="platform/packages/apps/Messaging" />
+            <remove-project name="platform/packages/apps/Music" />
+            <remove-project name="platform/packages/apps/QuickSearchBox" />
+            <remove-project name="platform/packages/apps/WallpaperPicker2" />
+            <remove-project name="platform/packages/apps/EmergencyInfo" />
+            <remove-project name="platform/packages/apps/Tag" />
+            <remove-project name="platform/packages/apps/ThemePicker" />
+            <remove-project name="platform/packages/screensavers/Basic" />
+            <remove-project name="platform/packages/screensavers/PhotoTable" />
+            <remove-project name="platform/packages/wallpapers/LivePicker" />
+            <remove-project name="platform/packages/services/AlternativeNetworkAccess" />
+            <remove-project name="platform/packages/services/Mms" />
+
+            <!-- Unneeded Tooling & Simulation Repositories (~3 GB) -->
+            <remove-project name="platform/tools/doc_generation" />
+            <remove-project name="platform/tools/currysrc" />
+            <remove-project name="platform/tools/trebuchet" />
+            <remove-project name="platform/tools/netsim" />
+            <remove-project name="platform/tools/rootcanal" />
+            <remove-project name="platform/tools/external_updater" />
+            <remove-project name="platform/tools/mainline" />
+            <remove-project name="platform/tools/ndkports" />
+            <remove-project name="platform/tools/loganalysis" />
             
             <!-- Android Auto / Car Apps (~3 GB) -->
             <remove-project name="platform/packages/apps/Car/SystemUI" />
@@ -307,16 +340,16 @@ jobs:
           cd $WORK_DIR
           repo sync -c -j4 --force-sync --no-clone-bundle --no-tags --prune
 
-      - name: Strip DotRepo Metadata and Unneeded Prebuilts (Reclaims 40+ GB)
+      - name: Strip DotRepo Metadata and Unneeded Prebuilts (Reclaims 50+ GB)
         run: |
           cd $WORK_DIR
           echo "=== Storage before stripping .repo and prebuilts ==="
           df -h .
           
-          # 1. Eliminate the entire .repo folder immediately
+          # 1. Eliminate the entire .repo folder immediately (~35-40 GB)
           rm -rf .repo
           
-          # 2. Eliminate unused architectures and legacy compilers
+          # 2. Eliminate unused architectures, documentation, test suites
           rm -rf cts pdk toolchain developers sdk
           rm -rf prebuilts/clang/host/darwin-x86
           rm -rf prebuilts/gcc/darwin-x86
@@ -325,11 +358,46 @@ jobs:
           rm -rf prebuilts/gcc/linux-x86/x86
           rm -rf prebuilts/jdk/jdk8 prebuilts/jdk/jdk9 prebuilts/jdk/jdk11 2>/dev/null || true
           rm -rf prebuilts/rust/linux-x86/*/share/doc 2>/dev/null || true
-          rm -rf prebuilts/vndk 2>/dev/null || true
-          rm -rf prebuilts/ndk 2>/dev/null || true
+          rm -rf prebuilts/vndk prebuilts/ndk 2>/dev/null || true
+
+          # 3. Strip historical SDK APIs (API 1 through 29 - saves ~10-12 GB)
+          # Only API 30+ and current/system/test are needed for Android 15 / PixelOS 17
+          for api in $(seq 1 29); do
+            rm -rf prebuilts/sdk/$api 2>/dev/null || true
+          done
+          rm -rf prebuilts/sdk/tools 2>/dev/null || true
+
+          # 4. Strip redundant older Clang toolchains (keep only the newest one - saves ~8-12 GB)
+          if [ -d "prebuilts/clang/host/linux-x86" ]; then
+            cd prebuilts/clang/host/linux-x86
+            LATEST_CLANG=$(ls -d clang-* 2>/dev/null | sort -V | tail -n 1)
+            echo "Active host Clang: $LATEST_CLANG"
+            for c in clang-*; do
+              if [ "$c" != "$LATEST_CLANG" ]; then
+                echo "Removing older toolchain: $c"
+                rm -rf "$c"
+              fi
+            done
+            cd $WORK_DIR
+          fi
           
           echo "=== Storage after aggressive stripping ==="
           df -h .
+
+      - name: Mount Transparently Compressed Btrfs Filesystem for Out Directory (Saves 35+ GB)
+        run: |
+          cd $WORK_DIR
+          echo "=== Creating sparse Btrfs filesystem with zstd:1 compression for out/ ==="
+          sudo mkdir -p /mnt/btrfs_storage
+          sudo truncate -s 60G /mnt/btrfs_storage/out_sparse.img
+          sudo mkfs.btrfs -m single /mnt/btrfs_storage/out_sparse.img
+          
+          mkdir -p out
+          sudo mount -o loop,compress=zstd:1,noatime,nodiratime,space_cache=v2 /mnt/btrfs_storage/out_sparse.img out
+          sudo chown -R $(id -u):$(id -g) out
+          
+          echo "=== Mounted compressed out directory ==="
+          df -h out
 
       - name: Deploy Tecno KJ7 Trees & Device Dependencies
         run: |
