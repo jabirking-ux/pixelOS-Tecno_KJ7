@@ -12,7 +12,8 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
 $(call inherit-product, device/tecno/kj7/device.mk)
 
 # Inherit from PixelOS common configuration
-$(call inherit-product, vendor/pixelos/config/common_full_phone.mk)
+$(call inherit-product-if-exists, vendor/custom/config/common_full_phone.mk)
+$(call inherit-product-if-exists, vendor/pixelos/config/common_full_phone.mk)
 
 PRODUCT_NAME := pixelos_kj7
 PRODUCT_DEVICE := kj7
@@ -20,6 +21,9 @@ PRODUCT_MANUFACTURER := TECNO
 PRODUCT_BRAND := TECNO
 BOARD_VENDOR := TECNO
 PRODUCT_MODEL := TECNO Spark 20 Pro+
+CUSTOM_BUILD := kj7
+LINEAGE_BUILD := kj7
+TARGET_DISABLE_EPPE := true
 
 PRODUCT_GMS_CLIENTID_BASE := android-tecno
 

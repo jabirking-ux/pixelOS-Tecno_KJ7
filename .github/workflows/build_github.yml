@@ -6,9 +6,10 @@ on:
       pixelos_branch:
         description: 'PixelOS Branch'
         required: true
-        default: 'sixteen'
+        default: 'seventeen'
         type: choice
         options:
+          - seventeen
           - sixteen
           - fifteen
           - fourteen
@@ -40,6 +41,11 @@ jobs:
           remove-codeql: 'true'
           remove-docker-images: 'true'
           overprovision-lvm: 'false'
+
+      - name: Checkout Tecno KJ7 Repository
+        uses: actions/checkout@v4
+        with:
+          path: kj7_source
 
       - name: Unmount and Completely Purge Snaps
         run: |
@@ -134,28 +140,18 @@ jobs:
           cd "$TARGET_DIR"
           echo "=== Target directory disk free ==="
           df -h .
-          repo init -u https://github.com/PixelOS-AOSP/manifest.git -b ${{ github.event.inputs.pixelos_branch }} \
+          repo init -u https://github.com/PixelOS-AOSP/android_manifest.git -b ${{ github.event.inputs.pixelos_branch }} \
             --groups=default,-mips,-x86,-darwin,-emulator,-notdefault,-tests,-cts,-device \
             --depth=1 \
             --partial-clone \
             --clone-filter=blob:none < /dev/null
 
-      - name: Inject Local Manifests (Tecno KJ7 + Extreme Bloat Removal)
+      - name: Inject Bloat Removal Local Manifest
         run: |
           cd $WORK_DIR
           mkdir -p .repo/local_manifests
           
-          # 1. Device tree, Vendor tree, Kernel tree
-          cat << 'EOF' > .repo/local_manifests/kj7.xml
-          <?xml version="1.0" encoding="UTF-8"?>
-          <manifest>
-            <project path="device/tecno/kj7" name="RapStuff/android_device_tecno_kj7" revision="lineage-23.0" remote="github" />
-            <project path="vendor/tecno/kj7" name="RapStuff/android_vendor_tecno_kj7" revision="lineage-22.1" remote="github" />
-            <project path="kernel/tecno/kj7" name="RapStuff/android_kernel_tecno_kj7" revision="lineage-23.0" remote="github" />
-          </manifest>
-          EOF
-
-          # 2. Comprehensive bloat removal (Car, TV, CTS, VTS, Darwin, Emulators) -> Saves 50+ GB!
+          # Comprehensive bloat removal (Car, TV, CTS, VTS, Darwin, Emulators) -> Saves 50+ GB
           cat << 'EOF' > .repo/local_manifests/remove_bloat.xml
           <?xml version="1.0" encoding="UTF-8"?>
           <manifest>
@@ -198,7 +194,6 @@ jobs:
             <!-- Android TV Apps -->
             <remove-project name="platform/packages/apps/TvSettings" />
             <remove-project name="platform/packages/apps/TvSystemUI" />
-            <remove-project name="platform/packages/apps/TV" />
 
             <!-- Unused Generic Architectures & Emulators -->
             <remove-project name="platform/prebuilts/android-emulator" />
@@ -228,7 +223,7 @@ jobs:
           cd $WORK_DIR
           repo sync -c -j4 --force-sync --no-clone-bundle --no-tags --prune
 
-      - name: Strip Entire DotRepo Metadata and Unneeded Trees
+      - name: Strip DotRepo Metadata and Unneeded Prebuilts
         run: |
           cd $WORK_DIR
           echo "=== Storage before .repo elimination ==="
@@ -243,40 +238,37 @@ jobs:
           echo "=== Storage after .repo elimination ==="
           df -h .
 
-      - name: Configure KJ7 Makefiles for PixelOS
+      - name: Deploy Tecno KJ7 Trees & Device Dependencies
         run: |
-          cd $WORK_DIR/device/tecno/kj7
-          cat << 'EOF' > AndroidProducts.mk
-          PRODUCT_MAKEFILES := \
-              $(LOCAL_DIR)/pixelos_kj7.mk
+          cd $WORK_DIR
+          echo "=== Installing Tecno KJ7 Device, Vendor, and Kernel Trees ==="
+          mkdir -p device/tecno
+          cp -r $GITHUB_WORKSPACE/kj7_source/device/tecno/kj7 device/tecno/kj7
+          
+          mkdir -p vendor/tecno
+          cp -r $GITHUB_WORKSPACE/kj7_source/vendor/tecno/kj7 vendor/tecno/kj7
+          
+          mkdir -p kernel/tecno
+          cp -r $GITHUB_WORKSPACE/kj7_source/kernel/tecno/kj7 kernel/tecno/kj7
 
-          COMMON_LUNCH_CHOICES := \
-              pixelos_kj7-user \
-              pixelos_kj7-userdebug \
-              pixelos_kj7-eng
-          EOF
+          # Fetch MediaTek Sepolicy if not already present
+          if [ ! -d "device/mediatek/sepolicy_vndr" ]; then
+            echo "=== Cloning MediaTek sepolicy ==="
+            mkdir -p device/mediatek
+            git clone --depth=1 -b lineage-24.0 https://github.com/LineageOS/android_device_mediatek_sepolicy_vndr.git device/mediatek/sepolicy_vndr || \
+            git clone --depth=1 -b lineage-23.0 https://github.com/LineageOS/android_device_mediatek_sepolicy_vndr.git device/mediatek/sepolicy_vndr || true
+          fi
 
-          cat << 'EOF' > pixelos_kj7.mk
-          $(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit.mk)
-          $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
-          $(call inherit-product, device/tecno/kj7/device.mk)
-          $(call inherit-product, vendor/pixelos/config/common_full_phone.mk)
+          # Ensure compatibility between vendor/custom and vendor/pixelos paths
+          if [ -d "vendor/custom" ] && [ ! -d "vendor/pixelos" ]; then
+            ln -s custom vendor/pixelos
+          fi
+          if [ -d "vendor/pixelos" ] && [ ! -d "vendor/custom" ]; then
+            ln -s pixelos vendor/custom
+          fi
 
-          PRODUCT_NAME := pixelos_kj7
-          PRODUCT_DEVICE := kj7
-          PRODUCT_MANUFACTURER := TECNO
-          PRODUCT_BRAND := TECNO
-          BOARD_VENDOR := TECNO
-          PRODUCT_MODEL := TECNO Spark 20 Pro+
-          PRODUCT_GMS_CLIENTID_BASE := android-tecno
-          PRODUCT_BUILD_PROP_OVERRIDES += \
-              DeviceName=KJ7 \
-              BuildFingerprint=TECNO/KJ7-OP/TECNO-KJ7:14/UP1A.231005.007/260112V2294:user/release-keys
-          EOF
-
-          sed -i 's/BOARD_BOOTIMAGE_PARTITION_SIZE := .*/BOARD_BOOTIMAGE_PARTITION_SIZE := 67108864/g' BoardConfig.mk
-          sed -i 's/BOARD_SUPER_PARTITION_SIZE := .*/BOARD_SUPER_PARTITION_SIZE := 8870707200/g' BoardConfig.mk
-          sed -i 's/BOARD_MEDIATEK_DYNAMIC_PARTITIONS_SIZE := .*/BOARD_MEDIATEK_DYNAMIC_PARTITIONS_SIZE := 8868610048/g' BoardConfig.mk
+          echo "=== Trees Installed ==="
+          ls -ld device/tecno/kj7 vendor/tecno/kj7 kernel/tecno/kj7 device/mediatek/sepolicy_vndr || true
 
       - name: Compile PixelOS for Tecno KJ7
         run: |
