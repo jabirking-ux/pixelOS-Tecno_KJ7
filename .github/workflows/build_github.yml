@@ -60,9 +60,9 @@ jobs:
           sudo apt-get purge -y snapd 2>/dev/null || true
           sudo rm -rf /snap /var/snap /var/lib/snapd /var/cache/snapd ~/snap 2>/dev/null || true
 
-      - name: Extreme Heavyweight Software & Database Purge
+      - name: Extreme Heavyweight Software & Database Purge (Minimal Lightweight Debian Base)
         run: |
-          echo "=== Purging heavy browsers, SDKs, databases, and unused runtimes ==="
+          echo "=== Purging heavy browsers, SDKs, databases, and unused runtimes to minimal Debian ==="
           sudo apt-get purge -y \
             azure-cli \
             google-cloud-sdk \
@@ -111,7 +111,7 @@ jobs:
           sudo rm -rf /var/log/*
           sudo apt-get clean
           sudo apt-get autoremove -y --purge
-          echo "=== Free space after extreme purge ==="
+          echo "=== Free space after minimal Debian purge ==="
           df -h
 
       - name: Setup Build Environment & Dependencies
@@ -132,13 +132,22 @@ jobs:
           git config --global http.lowSpeedLimit 1000
           git config --global http.lowSpeedTime 60
 
-      - name: Initialize PixelOS Manifest on Maximized LVM Mount
+      - name: Initialize Transparently Compressed Btrfs Build Volume (Saves 60-80+ GB)
         run: |
           TARGET_DIR="$GITHUB_WORKSPACE/pixelos"
           mkdir -p "$TARGET_DIR"
           echo "WORK_DIR=$TARGET_DIR" >> $GITHUB_ENV
+          
+          echo "=== Setting up 120GB sparse Btrfs filesystem with zstd:1 transparent compression ==="
+          sudo mkdir -p /mnt/compressed_btrfs
+          sudo truncate -s 120G /mnt/compressed_btrfs/btrfs_build.img
+          sudo mkfs.btrfs -m single /mnt/compressed_btrfs/btrfs_build.img
+          
+          sudo mount -o loop,compress=zstd:1,noatime,nodiratime,space_cache=v2 /mnt/compressed_btrfs/btrfs_build.img "$TARGET_DIR"
+          sudo chown -R $(id -u):$(id -g) "$TARGET_DIR"
+          
           cd "$TARGET_DIR"
-          echo "=== Target directory disk free ==="
+          echo "=== Mounted 120GB compressed build directory ==="
           df -h .
           repo init -u https://github.com/PixelOS-AOSP/android_manifest.git -b ${{ github.event.inputs.pixelos_branch }} \
             --groups=default,-mips,-x86,-darwin,-emulator,-notdefault,-tests,-cts,-device \
@@ -146,7 +155,7 @@ jobs:
             --partial-clone \
             --clone-filter=blob:none < /dev/null
 
-      - name: Inject Massive Bloat Removal Local Manifest (Saves 35+ GB)
+      - name: Inject Massive Bloat Removal Local Manifest (Saves 45+ GB)
         run: |
           cd $WORK_DIR
           mkdir -p .repo/local_manifests
@@ -169,6 +178,20 @@ jobs:
             <remove-project name="platform/tools/tradefederation" />
             <remove-project name="platform/tools/tradefederation/contrib" />
             <remove-project name="platform/tools/tradefederation/prebuilts" />
+
+            <!-- Non-Production Test Suites & Software Rasterizers (~10 GB) -->
+            <remove-project name="platform/external/deqp" />
+            <remove-project name="platform/external/deqp-deps/amber" />
+            <remove-project name="platform/external/deqp-deps/glslang" />
+            <remove-project name="platform/external/deqp-deps/SPIRV-Headers" />
+            <remove-project name="platform/external/deqp-deps/SPIRV-Tools" />
+            <remove-project name="platform/external/vulkan-validation-layers" />
+            <remove-project name="platform/external/mesa3d" />
+            <remove-project name="platform/external/tcpdump" />
+            <remove-project name="platform/external/strace" />
+            <remove-project name="platform/external/scapy" />
+            <remove-project name="platform/external/iperf3" />
+            <remove-project name="platform/packages/apps/Test/connectivity" />
 
             <!-- Stock AOSP Apps Replaced by Pixel GMS Apps (~8 GB) -->
             <remove-project name="platform/packages/apps/Browser2" />
@@ -340,7 +363,7 @@ jobs:
           cd $WORK_DIR
           repo sync -c -j4 --force-sync --no-clone-bundle --no-tags --prune
 
-      - name: Strip DotRepo Metadata and Unneeded Prebuilts (Reclaims 50+ GB)
+      - name: Strip DotRepo Metadata and Unneeded Prebuilts (Keeping All Historic SDK APIs)
         run: |
           cd $WORK_DIR
           echo "=== Storage before stripping .repo and prebuilts ==="
@@ -360,12 +383,7 @@ jobs:
           rm -rf prebuilts/rust/linux-x86/*/share/doc 2>/dev/null || true
           rm -rf prebuilts/vndk prebuilts/ndk 2>/dev/null || true
 
-          # 3. Strip historical SDK APIs (API 1 through 29 - saves ~10-12 GB)
-          # Only API 30+ and current/system/test are needed for Android 15 / PixelOS 17
-          for api in $(seq 1 29); do
-            rm -rf prebuilts/sdk/$api 2>/dev/null || true
-          done
-          rm -rf prebuilts/sdk/tools 2>/dev/null || true
+          # 3. All historic APIs in prebuilts/sdk (API 1-35) are PRESERVED 100% intact!
 
           # 4. Strip redundant older Clang toolchains (keep only the newest one - saves ~8-12 GB)
           if [ -d "prebuilts/clang/host/linux-x86" ]; then
@@ -381,23 +399,8 @@ jobs:
             cd $WORK_DIR
           fi
           
-          echo "=== Storage after aggressive stripping ==="
+          echo "=== Storage after aggressive stripping (SDK APIs intact) ==="
           df -h .
-
-      - name: Mount Transparently Compressed Btrfs Filesystem for Out Directory (Saves 35+ GB)
-        run: |
-          cd $WORK_DIR
-          echo "=== Creating sparse Btrfs filesystem with zstd:1 compression for out/ ==="
-          sudo mkdir -p /mnt/btrfs_storage
-          sudo truncate -s 60G /mnt/btrfs_storage/out_sparse.img
-          sudo mkfs.btrfs -m single /mnt/btrfs_storage/out_sparse.img
-          
-          mkdir -p out
-          sudo mount -o loop,compress=zstd:1,noatime,nodiratime,space_cache=v2 /mnt/btrfs_storage/out_sparse.img out
-          sudo chown -R $(id -u):$(id -g) out
-          
-          echo "=== Mounted compressed out directory ==="
-          df -h out
 
       - name: Deploy Tecno KJ7 Trees & Device Dependencies
         run: |
