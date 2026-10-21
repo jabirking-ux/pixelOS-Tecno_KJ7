@@ -122,6 +122,9 @@ jobs:
           echo "$HOME/bin" >> $GITHUB_PATH
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
+          git config --global http.postBuffer 524288000
+          git config --global http.lowSpeedLimit 1000
+          git config --global http.lowSpeedTime 60
 
       - name: Initialize PixelOS Manifest on Maximized LVM Mount
         run: |
@@ -137,7 +140,7 @@ jobs:
             --partial-clone \
             --clone-filter=blob:none < /dev/null
 
-      - name: Inject Local Manifests (Tecno KJ7 + Unneeded Trees Purge)
+      - name: Inject Local Manifests (Tecno KJ7 + Extreme Bloat Removal)
         run: |
           cd $WORK_DIR
           mkdir -p .repo/local_manifests
@@ -152,10 +155,11 @@ jobs:
           </manifest>
           EOF
 
-          # 2. Drop multi-gigabyte unneeded trees that waste 40+ GB during repo sync
+          # 2. Comprehensive bloat removal (Car, TV, CTS, VTS, Darwin, Emulators) -> Saves 50+ GB!
           cat << 'EOF' > .repo/local_manifests/remove_bloat.xml
           <?xml version="1.0" encoding="UTF-8"?>
           <manifest>
+            <!-- Heavy Test Suites -->
             <remove-project name="platform/cts" />
             <remove-project name="platform/pdk" />
             <remove-project name="platform/developers/build" />
@@ -170,6 +174,36 @@ jobs:
             <remove-project name="platform/test/vts-testcase/vndk" />
             <remove-project name="platform/tools/test/connectivity" />
             <remove-project name="platform/tools/test/graphicsbenchmark" />
+            <remove-project name="platform/tools/test/mobly_extensions" />
+            <remove-project name="platform/tools/test/mobly_snippets" />
+            <remove-project name="platform/tools/test/openhst" />
+            
+            <!-- Android Auto / Car Apps (Zero need on Tecno Spark phone) -->
+            <remove-project name="platform/packages/apps/Car/SystemUI" />
+            <remove-project name="platform/packages/apps/Car/Cluster" />
+            <remove-project name="platform/packages/apps/Car/DebuggingRestrictionController" />
+            <remove-project name="platform/packages/apps/Car/DialerPrebuilt" />
+            <remove-project name="platform/packages/apps/Car/LatinIME" />
+            <remove-project name="platform/packages/apps/Car/Launcher" />
+            <remove-project name="platform/packages/apps/Car/LinkViewer" />
+            <remove-project name="platform/packages/apps/Car/LocalMediaPlayer" />
+            <remove-project name="platform/packages/apps/Car/MediaPrebuilt" />
+            <remove-project name="platform/packages/apps/Car/MessengerPrebuilt" />
+            <remove-project name="platform/packages/apps/Car/Notification" />
+            <remove-project name="platform/packages/apps/Car/Provision" />
+            <remove-project name="platform/packages/apps/Car/Radio" />
+            <remove-project name="platform/packages/apps/Car/RotaryController" />
+            <remove-project name="platform/packages/apps/Car/Settings" />
+            <remove-project name="platform/packages/apps/Car/SettingsIntelligence" />
+            <remove-project name="platform/packages/apps/Car/systemlibs" />
+            <remove-project name="platform/packages/apps/Car/SystemUpdater" />
+
+            <!-- Android TV Apps -->
+            <remove-project name="platform/packages/apps/TvSettings" />
+            <remove-project name="platform/packages/apps/TvSystemUI" />
+            <remove-project name="platform/packages/apps/TV" />
+
+            <!-- Unused Generic Architectures & Emulators -->
             <remove-project name="platform/prebuilts/android-emulator" />
             <remove-project name="platform/prebuilts/clang/host/darwin-x86" />
             <remove-project name="platform/prebuilts/bazel/darwin-x86_64" />
@@ -195,7 +229,8 @@ jobs:
       - name: Sync Source Tree
         run: |
           cd $WORK_DIR
-          repo sync -c -j4 --force-sync --no-clone-bundle --no-tags --prune
+          # -j8 for fast download, --optimized-fetch, and --prune
+          repo sync -c -j8 --force-sync --no-clone-bundle --no-tags --prune
 
       - name: Strip Entire DotRepo Metadata and Unneeded Trees
         run: |
