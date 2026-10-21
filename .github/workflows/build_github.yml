@@ -280,7 +280,6 @@ jobs:
             <remove-project name="kernel/prebuilts/build-tools" />
 
             <!-- Unused Qualcomm CAF HALs (100% Safe - Tecno KJ7 is MediaTek Helio G99 MT6789) (~10 GB) -->
-            <remove-project name="platform/hardware/qcom/wlan" />
             <remove-project name="LineageOS/android_hardware_qcom_sm7250_display" />
             <remove-project name="LineageOS/android_hardware_qcom_sm7250_gps" />
             <remove-project name="LineageOS/android_hardware_qcom_sm8150_display" />
