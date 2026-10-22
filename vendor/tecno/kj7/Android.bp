@@ -5,12 +5,8 @@
 soong_namespace {
     imports: [
         "device/tecno/kj7",
-        "hardware/transsion",
         "hardware/google/interfaces",
         "hardware/google/pixel",
-        "hardware/mediatek",
-        "hardware/mediatek/libmtkperf_client",
-        "vendor/mediatek/ims",
     ],
 }
 

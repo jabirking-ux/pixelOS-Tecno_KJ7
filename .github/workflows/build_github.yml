@@ -451,6 +451,14 @@ jobs:
             ln -s pixelos vendor/custom
           fi
 
+          # Ensure dummy soong namespaces exist for any external references
+          for ns in hardware/transsion hardware/mediatek hardware/mediatek/libmtkperf_client vendor/mediatek/ims; do
+            mkdir -p "$ns"
+            if [ ! -f "$ns/Android.bp" ]; then
+              echo 'soong_namespace {}' > "$ns/Android.bp"
+            fi
+          done
+
           echo "=== Trees Installed ==="
           ls -ld device/tecno/kj7 vendor/tecno/kj7 kernel/tecno/kj7 device/mediatek/sepolicy_vndr || true
 
