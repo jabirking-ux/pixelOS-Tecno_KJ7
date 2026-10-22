@@ -21805,11 +21805,6 @@ cc_prebuilt_library_shared {
                 "proprietary/vendor/lib64/vendor.transsion.hardware.wifi.hostapd@1.0.so",
             ],
             shared_libs: [
-                "android.hardware.wifi.hostapd@1.0",
-                "android.hardware.wifi.hostapd@1.1",
-                "android.hardware.wifi.hostapd@1.2",
-                "android.hardware.wifi.hostapd@1.3",
-                "android.hardware.wifi.supplicant@1.0",
                 "libhidlbase",
                 "liblog",
                 "libutils",
