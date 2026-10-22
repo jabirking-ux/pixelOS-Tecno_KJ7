@@ -466,7 +466,6 @@ jobs:
           export SKIP_BOOT_JARS_CHECK=true
           export DONT_UNCOMPRESS_PRIV_APPS_DEXS=true
           export SOONG_ALLOW_MISSING_DEPENDENCIES=true
-          export WITHOUT_CHECK_API=true
           export USE_CCACHE=0
           export SOONG_GEN_COMPDB=0
           
