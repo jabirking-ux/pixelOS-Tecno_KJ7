@@ -387,38 +387,22 @@ jobs:
           echo "=== Storage before stripping .repo and prebuilts ==="
           df -h .
           
-          # 1. Eliminate the entire .repo folder immediately (~35-40 GB)
+          # 1. Eliminate the entire .repo folder immediately (~35-40 GB reclaimed)
           rm -rf .repo
           
-          # 2. Eliminate unused architectures, documentation, test suites
+          # 2. Eliminate unused host platforms and unneeded docs
           rm -rf cts pdk developers sdk
-          # Ensure toolchain/pgo-profiles exists for soong_config.mk
-          mkdir -p toolchain/pgo-profiles/sampling
-          touch toolchain/pgo-profiles/sampling/afdo_profiles.mk
           rm -rf prebuilts/clang/host/darwin-x86
           rm -rf prebuilts/gcc/darwin-x86
-          rm -rf prebuilts/gcc/linux-x86/arm
-          rm -rf prebuilts/gcc/linux-x86/mips
-          rm -rf prebuilts/gcc/linux-x86/x86
-          rm -rf prebuilts/jdk/jdk8 prebuilts/jdk/jdk9 prebuilts/jdk/jdk11 2>/dev/null || true
           rm -rf prebuilts/rust/linux-x86/*/share/doc 2>/dev/null || true
-          rm -rf prebuilts/vndk prebuilts/ndk 2>/dev/null || true
+          
+          # 3. Ensure toolchain/pgo-profiles exists for soong_config.mk
+          mkdir -p toolchain/pgo-profiles/sampling
+          touch toolchain/pgo-profiles/sampling/afdo_profiles.mk
 
-          # 3. All historic APIs in prebuilts/sdk (API 1-35) are PRESERVED 100% intact!
-
-          # 4. Strip redundant older Clang toolchains (keep only the newest one - saves ~8-12 GB)
-          if [ -d "prebuilts/clang/host/linux-x86" ]; then
-            cd prebuilts/clang/host/linux-x86
-            LATEST_CLANG=$(ls -d clang-* 2>/dev/null | sort -V | tail -n 1)
-            echo "Active host Clang: $LATEST_CLANG"
-            for c in clang-*; do
-              if [ "$c" != "$LATEST_CLANG" ]; then
-                echo "Removing older toolchain: $c"
-                rm -rf "$c"
-              fi
-            done
-            cd $WORK_DIR
-          fi
+          # 4. PRESERVE ALL Linux Clang toolchains intact (required by prebuilts/clang/host/linux-x86/Android.bp)
+          # 5. PRESERVE ALL Historic SDK APIs 1-35 in prebuilts/sdk 100% intact
+          # 6. PRESERVE ALL VNDK/NDK prebuilts for device proprietary binary linking
           
           echo "=== Storage after aggressive stripping (100+ GB available) ==="
           df -h .
