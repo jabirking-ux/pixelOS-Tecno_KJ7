@@ -166,16 +166,6 @@ jobs:
 
             <!-- Non-Production Test Frameworks & Debug Tooling (100% Safe) (~10 GB) -->
             <remove-project name="platform/external/deqp" />
-            <remove-project name="platform/external/deqp-deps/amber" />
-            <remove-project name="platform/external/deqp-deps/glslang" />
-            <remove-project name="platform/external/deqp-deps/SPIRV-Headers" />
-            <remove-project name="platform/external/deqp-deps/SPIRV-Tools" />
-            <remove-project name="platform/external/vulkan-validation-layers" />
-            <remove-project name="platform/external/mesa3d" />
-            <remove-project name="platform/external/tcpdump" />
-            <remove-project name="platform/external/strace" />
-            <remove-project name="platform/external/scapy" />
-            <remove-project name="platform/external/iperf3" />
             <remove-project name="platform/packages/apps/Test/connectivity" />
 
             <!-- Stock AOSP Apps Replaced by Pixel GMS Apps (100% Safe) (~8 GB) -->
