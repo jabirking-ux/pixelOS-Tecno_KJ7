@@ -462,10 +462,13 @@ jobs:
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
           sudo swapon /swapfile
-          sudo sysctl -w vm.swappiness=10
+          sudo sysctl -w vm.swappiness=1
           sudo sysctl -w vm.vfs_cache_pressure=100
           free -h
           df -h /
+          
+          echo "=== Patching Blueprint & Soong to inject GOMEMLIMIT into hermetic env -i soong_build ==="
+          find build/ -type f \( -name "*.go" -o -name "*.sh" -o -name "*.bash" \) -exec sed -i 's/env -i /env -i GOMEMLIMIT=10GiB GOGC=80 MALLOC_ARENA_MAX=2 /g' {} +
           
           source build/envsetup.sh
           echo "=== Configuring Lunch Target for Android 15 / PixelOS 17 ==="
