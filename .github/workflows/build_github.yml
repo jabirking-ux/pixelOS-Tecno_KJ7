@@ -391,7 +391,10 @@ jobs:
           rm -rf .repo
           
           # 2. Eliminate unused architectures, documentation, test suites
-          rm -rf cts pdk toolchain developers sdk
+          rm -rf cts pdk developers sdk
+          # Ensure toolchain/pgo-profiles exists for soong_config.mk
+          mkdir -p toolchain/pgo-profiles/sampling
+          touch toolchain/pgo-profiles/sampling/afdo_profiles.mk
           rm -rf prebuilts/clang/host/darwin-x86
           rm -rf prebuilts/gcc/darwin-x86
           rm -rf prebuilts/gcc/linux-x86/arm

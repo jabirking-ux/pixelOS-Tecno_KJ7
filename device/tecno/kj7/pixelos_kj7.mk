@@ -11,6 +11,10 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
 # Inherit from device makefile.
 $(call inherit-product, device/tecno/kj7/device.mk)
 
+# Display resolution
+TARGET_SCREEN_WIDTH := 1080
+TARGET_SCREEN_HEIGHT := 2436
+
 # Inherit from PixelOS common configuration
 $(call inherit-product-if-exists, vendor/custom/config/common_full_phone.mk)
 $(call inherit-product-if-exists, vendor/pixelos/config/common_full_phone.mk)
