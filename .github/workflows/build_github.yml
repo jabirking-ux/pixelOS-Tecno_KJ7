@@ -119,6 +119,7 @@ jobs:
           git config --global http.postBuffer 524288000
           git config --global http.lowSpeedLimit 1000
           git config --global http.lowSpeedTime 60
+          git config --global http.version HTTP/1.1
 
       - name: Initialize PixelOS Manifest on Native NVMe Storage (130+ GB Headroom)
         run: |
@@ -366,7 +367,9 @@ jobs:
           cd $WORK_DIR
           echo "=== Storage before source tree sync ==="
           df -h .
-          repo sync -c -j4 --force-sync --no-clone-bundle --no-tags --prune
+          repo sync -c -j4 --force-sync --no-clone-bundle --no-tags --prune || \
+          (echo "=== Retry 1 with -j2 ===" && sleep 10 && repo sync -c -j2 --force-sync --no-clone-bundle --no-tags --prune) || \
+          (echo "=== Retry 2 with -j1 ===" && sleep 15 && repo sync -c -j1 --force-sync --no-clone-bundle --no-tags --prune)
           echo "=== Storage after source tree sync ==="
           df -h .
 
