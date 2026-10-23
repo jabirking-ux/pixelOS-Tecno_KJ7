@@ -382,7 +382,7 @@ jobs:
           rm -rf .repo
           
           # 2. Eliminate unused host platforms and unneeded docs
-          rm -rf cts pdk developers sdk
+          rm -rf cts pdk developers
           rm -rf prebuilts/clang/host/darwin-x86
           rm -rf prebuilts/gcc/darwin-x86
           rm -rf prebuilts/rust/linux-x86/*/share/doc 2>/dev/null || true
@@ -393,7 +393,8 @@ jobs:
 
           # 4. PRESERVE ALL Linux Clang toolchains intact (required by prebuilts/clang/host/linux-x86/Android.bp)
           # 5. PRESERVE ALL Historic SDK APIs 1-35 in prebuilts/sdk 100% intact
-          # 6. PRESERVE ALL VNDK/NDK prebuilts for device proprietary binary linking
+          # 6. PRESERVE sdk/ directory intact (sdk/annotations provides java_library_host annotations)
+          # 7. PRESERVE ALL VNDK/NDK prebuilts for device proprietary binary linking
           
           echo "=== Storage after aggressive stripping (100+ GB available) ==="
           df -h .
@@ -451,26 +452,55 @@ jobs:
             fi
           done
 
+          # Ensure sdk/annotations is intact (required by error_prone_android_framework_lib)
+          if [ ! -f "sdk/annotations/Android.bp" ]; then
+            echo "=== Providing fallback sdk/annotations module ==="
+            mkdir -p sdk/annotations/src/android/annotation
+            cat << 'EOF' > sdk/annotations/Android.bp
+java_library_host {
+    name: "annotations",
+    srcs: ["src/**/*.java"],
+    java_resource_dirs: ["src"],
+}
+EOF
+            cat << 'EOF' > sdk/annotations/src/android/annotation/NonNull.java
+package android.annotation;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+@Retention(RetentionPolicy.CLASS)
+public @interface NonNull {}
+EOF
+          fi
+
           echo "=== Trees Installed ==="
           ls -ld device/tecno/kj7 vendor/tecno/kj7 kernel/tecno/kj7 device/mediatek/sepolicy_vndr || true
 
       - name: Compile PixelOS for Tecno KJ7 (Continuous Symbol Stripping)
         run: |
           cd $WORK_DIR
-          echo "=== Setting up 16 GB NVMe Swapfile for Compilation & Blueprint Generation ==="
+          echo "=== Setting up zram and 16 GB NVMe Swapfile for Compilation & Blueprint Generation ==="
           sudo swapoff -a || true
           sudo rm -f /swapfile || true
           sudo fallocate -l 16G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=16384
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
-          sudo swapon /swapfile
-          sudo sysctl -w vm.swappiness=1
+          sudo swapon -p 10 /swapfile
+
+          sudo modprobe zram num_devices=1 2>/dev/null || true
+          if command -v zramctl >/dev/null 2>&1; then
+            sudo zramctl --find --size 8G --algorithm zstd 2>/dev/null || \
+            sudo zramctl --find --size 8G --algorithm lz4 2>/dev/null || true
+            sudo mkswap /dev/zram0 2>/dev/null || true
+            sudo swapon -p 100 /dev/zram0 2>/dev/null || true
+          fi
+
+          sudo sysctl -w vm.swappiness=60
           sudo sysctl -w vm.vfs_cache_pressure=100
           free -h
           df -h /
           
           echo "=== Patching Blueprint & Soong to inject GOMEMLIMIT into hermetic env -i soong_build ==="
-          find build/ -type f \( -name "*.go" -o -name "*.sh" -o -name "*.bash" \) -exec sed -i 's/env -i /env -i GOMEMLIMIT=10GiB GOGC=80 MALLOC_ARENA_MAX=2 /g' {} +
+          find build/ -type f \( -name "*.go" -o -name "*.sh" -o -name "*.bash" \) -exec sed -i 's/env -i /env -i GOMEMLIMIT=7GiB GOGC=50 MALLOC_ARENA_MAX=2 /g' {} +
           
           source build/envsetup.sh
           echo "=== Configuring Lunch Target for Android 15 / PixelOS 17 ==="
@@ -485,8 +515,9 @@ jobs:
           export SOONG_ALLOW_MISSING_DEPENDENCIES=true
           export USE_CCACHE=0
           export SOONG_GEN_COMPDB=0
-          export GOGC=80
-          export GOMEMLIMIT=12GiB
+          export GOGC=50
+          export GOMEMLIMIT=7GiB
+          export RUN_ERROR_PRONE=false
           
           # Actively purge intermediate debug symbols and unstripped libs to prevent disk exhaustion
           (
