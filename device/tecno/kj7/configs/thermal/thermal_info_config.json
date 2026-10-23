@@ -1,0 +1,25 @@
+{
+    "Sensors": [
+        {
+            "Name": "battery",
+            "Type": "BATTERY",
+            "HotThreshold": [45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0],
+            "VrThreshold": 45.0,
+            "Multiplier": 0.001
+        },
+        {
+            "Name": "cpu0-0",
+            "Type": "CPU",
+            "HotThreshold": [75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0],
+            "VrThreshold": 75.0,
+            "Multiplier": 0.001
+        },
+        {
+            "Name": "gpu",
+            "Type": "GPU",
+            "HotThreshold": [75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0],
+            "VrThreshold": 75.0,
+            "Multiplier": 0.001
+        }
+    ]
+}
