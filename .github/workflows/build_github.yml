@@ -456,20 +456,8 @@ jobs:
           if [ ! -f "sdk/annotations/Android.bp" ]; then
             echo "=== Providing fallback sdk/annotations module ==="
             mkdir -p sdk/annotations/src/android/annotation
-            cat << 'EOF' > sdk/annotations/Android.bp
-java_library_host {
-    name: "annotations",
-    srcs: ["src/**/*.java"],
-    java_resource_dirs: ["src"],
-}
-EOF
-            cat << 'EOF' > sdk/annotations/src/android/annotation/NonNull.java
-package android.annotation;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-@Retention(RetentionPolicy.CLASS)
-public @interface NonNull {}
-EOF
+            printf 'java_library_host {\n    name: "annotations",\n    srcs: ["src/**/*.java"],\n    java_resource_dirs: ["src"],\n}\n' > sdk/annotations/Android.bp
+            printf 'package android.annotation;\nimport java.lang.annotation.Retention;\nimport java.lang.annotation.RetentionPolicy;\n@Retention(RetentionPolicy.CLASS)\npublic @interface NonNull {}\n' > sdk/annotations/src/android/annotation/NonNull.java
           fi
 
           echo "=== Trees Installed ==="
