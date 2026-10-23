@@ -192,7 +192,6 @@ jobs:
             <remove-project name="platform/tools/doc_generation" />
             <remove-project name="platform/tools/currysrc" />
             <remove-project name="platform/tools/trebuchet" />
-            <remove-project name="platform/tools/metalava" />
             <remove-project name="platform/tools/security" />
             <remove-project name="platform/tools/repohooks" />
             <remove-project name="platform/tools/ndkports" />
