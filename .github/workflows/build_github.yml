@@ -130,7 +130,7 @@ jobs:
           echo "=== Storage before manifest init ==="
           df -h .
           repo init -u https://github.com/PixelOS-AOSP/android_manifest.git -b ${{ github.event.inputs.pixelos_branch }} \
-            --groups=default,-mips,-x86,-darwin,-emulator,-notdefault,-tests,-cts,-device \
+            --groups=default,-mips,-x86,-darwin,-emulator,-notdefault,-device \
             --depth=1 < /dev/null
 
       - name: Inject Safe Bloat Removal Local Manifest (Saves 70+ GB)
@@ -460,16 +460,25 @@ jobs:
             printf 'package android.annotation;\nimport java.lang.annotation.Retention;\nimport java.lang.annotation.RetentionPolicy;\n@Retention(RetentionPolicy.CLASS)\npublic @interface NonNull {}\n' > sdk/annotations/src/android/annotation/NonNull.java
           fi
 
+          # Ensure PlatformMotionTestingComposeValues is available (required by PlatformComposeCore / SystemUI)
+          if [ ! -f "platform_testing/libraries/motion/compose/values/Android.bp" ]; then
+            echo "=== Providing fallback PlatformMotionTestingComposeValues module ==="
+            mkdir -p platform_testing/libraries/motion/compose/values/src/platform/test/motion/compose/values
+            printf '<manifest package="platform.test.motion.compose.values" />\n' > platform_testing/libraries/motion/compose/values/AndroidManifest.xml
+            printf 'android_library {\n    name: "PlatformMotionTestingComposeValues",\n    manifest: "AndroidManifest.xml",\n    srcs: ["src/**/*.kt"],\n    sdk_version: "current",\n}\n' > platform_testing/libraries/motion/compose/values/Android.bp
+            printf 'package platform.test.motion.compose.values\nobject MotionTestValue\n' > platform_testing/libraries/motion/compose/values/src/platform/test/motion/compose/values/MotionTestValue.kt
+          fi
+
           echo "=== Trees Installed ==="
           ls -ld device/tecno/kj7 vendor/tecno/kj7 kernel/tecno/kj7 device/mediatek/sepolicy_vndr || true
 
       - name: Compile PixelOS for Tecno KJ7 (Continuous Symbol Stripping)
         run: |
           cd $WORK_DIR
-          echo "=== Setting up zram and 16 GB NVMe Swapfile for Compilation & Blueprint Generation ==="
+          echo "=== Setting up zram and 8 GB NVMe Swapfile for High-Speed Compilation ==="
           sudo swapoff -a || true
           sudo rm -f /swapfile || true
-          sudo fallocate -l 16G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=16384
+          sudo fallocate -l 8G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=8192
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
           sudo swapon -p 10 /swapfile
@@ -487,8 +496,8 @@ jobs:
           free -h
           df -h /
           
-          echo "=== Patching Blueprint & Soong to inject GOMEMLIMIT into hermetic env -i soong_build ==="
-          find build/ -type f \( -name "*.go" -o -name "*.sh" -o -name "*.bash" \) -exec sed -i 's/env -i /env -i GOMEMLIMIT=7GiB GOGC=50 MALLOC_ARENA_MAX=2 /g' {} +
+          echo "=== Optimizing Blueprint & Soong for 16 GB Runner (Eliminates GC Throttling) ==="
+          find build/ -type f \( -name "*.go" -o -name "*.sh" -o -name "*.bash" \) -exec sed -i 's/env -i /env -i GOMEMLIMIT=14GiB GOGC=100 /g' {} +
           
           source build/envsetup.sh
           echo "=== Configuring Lunch Target for Android 15 / PixelOS 17 ==="
@@ -500,18 +509,21 @@ jobs:
           export TARGET_BUILD_VARIANT=userdebug
           export SKIP_BOOT_JARS_CHECK=true
           export DONT_UNCOMPRESS_PRIV_APPS_DEXS=true
+          export WITH_DEXPREOPT_BOOT_IMG_AND_SYSTEM_SERVER_ONLY=true
           export SOONG_ALLOW_MISSING_DEPENDENCIES=true
           export USE_CCACHE=0
           export SOONG_GEN_COMPDB=0
-          export GOGC=50
-          export GOMEMLIMIT=7GiB
+          export GOGC=100
+          export GOMEMLIMIT=14GiB
           export RUN_ERROR_PRONE=false
           
-          # Actively purge intermediate debug symbols and unstripped libs to prevent disk exhaustion
+          # Monitor disk space: only purge intermediate debug symbols when storage exceeds 85%
           (
             while true; do
-              sleep 90
-              if [ -d "$WORK_DIR/out/target/product/kj7" ]; then
+              sleep 300
+              USAGE=$(df / | awk 'NR==2 {print $5}' | tr -d '%')
+              if [ "$USAGE" -gt 85 ] && [ -d "$WORK_DIR/out/target/product/kj7" ]; then
+                echo "=== High disk usage ($USAGE%) detected: purging debug symbols ==="
                 rm -rf $WORK_DIR/out/target/product/kj7/symbols 2>/dev/null || true
                 rm -rf $WORK_DIR/out/target/product/kj7/obj/SHARED_LIBRARIES/*_intermediates/LINKED 2>/dev/null || true
                 rm -rf $WORK_DIR/out/target/product/kj7/obj/STATIC_LIBRARIES/*_intermediates/LINKED 2>/dev/null || true
