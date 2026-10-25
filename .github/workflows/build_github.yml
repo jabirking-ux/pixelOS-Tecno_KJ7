@@ -121,27 +121,12 @@ jobs:
           git config --global http.lowSpeedTime 60
           git config --global http.version HTTP/1.1
 
-      - name: Mount Transparently Compressed Btrfs Filesystem for Entire Workspace & Out (Saves 80+ GB)
+      - name: Initialize PixelOS Manifest on Native NVMe Storage (130+ GB Headroom)
         run: |
           TARGET_DIR="$GITHUB_WORKSPACE/pixelos"
           mkdir -p "$TARGET_DIR"
           echo "WORK_DIR=$TARGET_DIR" >> $GITHUB_ENV
-          
-          echo "=== Setting up 120GB sparse Btrfs filesystem on NVMe root with zstd:3 compression ==="
-          BACKING_DIR="$HOME/btrfs_backing"
-          mkdir -p "$BACKING_DIR"
-          sudo truncate -s 120G "$BACKING_DIR/workspace.img"
-          sudo mkfs.btrfs -m single "$BACKING_DIR/workspace.img"
-          
-          sudo mount -o loop,compress=zstd:3,noatime,nodiratime,space_cache=v2 "$BACKING_DIR/workspace.img" "$TARGET_DIR"
-          sudo chown -R $(id -u):$(id -g) "$TARGET_DIR"
-          
-          echo "=== Mounted compressed workspace directory ==="
-          df -h "$TARGET_DIR"
-
-      - name: Initialize PixelOS Manifest on Compressed Workspace
-        run: |
-          cd "$WORK_DIR"
+          cd "$TARGET_DIR"
           echo "=== Storage before manifest init ==="
           df -h .
           repo init -u https://github.com/PixelOS-AOSP/android_manifest.git -b ${{ github.event.inputs.pixelos_branch }} \
@@ -414,6 +399,21 @@ jobs:
           echo "=== Storage after aggressive stripping (100+ GB available) ==="
           df -h .
 
+      - name: Mount Transparently Compressed Btrfs Filesystem for Out Directory (Saves 40+ GB)
+        run: |
+          cd $WORK_DIR
+          echo "=== Setting up 70GB sparse Btrfs filesystem on NVMe root with zstd:3 compression ==="
+          BACKING_DIR="$HOME/btrfs_backing"
+          mkdir -p "$BACKING_DIR"
+          sudo truncate -s 70G "$BACKING_DIR/out_sparse.img"
+          sudo mkfs.btrfs -m single "$BACKING_DIR/out_sparse.img"
+          
+          mkdir -p out
+          sudo mount -o loop,compress=zstd:3,noatime,nodiratime,space_cache=v2 "$BACKING_DIR/out_sparse.img" out
+          sudo chown -R $(id -u):$(id -g) out
+          
+          echo "=== Mounted compressed out directory ==="
+          df -h out
 
       - name: Deploy Tecno KJ7 Trees & Device Dependencies
         run: |
@@ -475,34 +475,27 @@ jobs:
       - name: Compile PixelOS for Tecno KJ7 (Continuous Symbol Stripping)
         run: |
           cd $WORK_DIR
-          echo "=== Protecting GitHub Actions runner processes against OOM killer ==="
+          echo "=== Protecting GitHub Actions runner processes against OOM killer & CPU starvation ==="
           pgrep -f "Runner" | while read pid; do
             sudo sh -c "echo -1000 > /proc/$pid/oom_score_adj" 2>/dev/null || true
+            sudo renice -n -10 -p $pid 2>/dev/null || true
           done
 
-          echo "=== Setting up zram and 10 GB NVMe Swapfile for High-Speed Compilation ==="
+          echo "=== Setting up 16 GB NVMe Swapfile ==="
           sudo swapoff -a || true
           sudo rm -f /swapfile || true
-          sudo fallocate -l 10G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=10240
+          sudo fallocate -l 16G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=16384
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
-          sudo swapon -p 10 /swapfile
+          sudo swapon /swapfile
 
-          sudo modprobe zram num_devices=1 2>/dev/null || true
-          if command -v zramctl >/dev/null 2>&1; then
-            sudo zramctl --find --size 8G --algorithm zstd 2>/dev/null || \
-            sudo zramctl --find --size 8G --algorithm lz4 2>/dev/null || true
-            sudo mkswap /dev/zram0 2>/dev/null || true
-            sudo swapon -p 100 /dev/zram0 2>/dev/null || true
-          fi
-
-          sudo sysctl -w vm.swappiness=60
+          sudo sysctl -w vm.swappiness=10
           sudo sysctl -w vm.vfs_cache_pressure=100
           free -h
           df -h /
           
-          echo "=== Optimizing Blueprint & Soong for 16 GB Runner (Eliminates GC Throttling) ==="
-          find build/ -type f \( -name "*.go" -o -name "*.sh" -o -name "*.bash" \) -exec sed -i 's/env -i /env -i GOMEMLIMIT=11GiB GOGC=80 /g' {} +
+          echo "=== Optimizing Blueprint & Soong for 16 GB Runner ==="
+          find build/ -type f \( -name "*.go" -o -name "*.sh" -o -name "*.bash" \) -exec sed -i 's/env -i /env -i GOMEMLIMIT=10GiB GOGC=80 /g' {} +
           
           source build/envsetup.sh
           echo "=== Configuring Lunch Target for Android 15 / PixelOS 17 ==="
@@ -519,7 +512,7 @@ jobs:
           export USE_CCACHE=0
           export SOONG_GEN_COMPDB=0
           export GOGC=80
-          export GOMEMLIMIT=11GiB
+          export GOMEMLIMIT=10GiB
           export RUN_ERROR_PRONE=false
           
           # Monitor disk space: only purge intermediate debug symbols when storage exceeds 85%
