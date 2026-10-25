@@ -382,7 +382,7 @@ jobs:
           rm -rf .repo
           
           # 2. Eliminate unused host platforms and unneeded docs
-          rm -rf cts pdk developers
+          rm -rf pdk developers
           rm -rf prebuilts/clang/host/darwin-x86
           rm -rf prebuilts/gcc/darwin-x86
           rm -rf prebuilts/rust/linux-x86/*/share/doc 2>/dev/null || true
@@ -418,9 +418,16 @@ jobs:
       - name: Deploy Tecno KJ7 Trees & Device Dependencies
         run: |
           cd $WORK_DIR
-          echo "=== Installing Tecno KJ7 Device, Vendor, and Kernel Trees ==="
+          echo "=== Installing Tecno KJ7 Device, Vendor, Kernel Trees & CTS Libraries ==="
           mkdir -p device/tecno
           cp -r $GITHUB_WORKSPACE/kj7_source/device/tecno/kj7 device/tecno/kj7
+
+          # Deploy cts/libs/json (provides jsonlib required by protologtool-lib)
+          if [ -d "$GITHUB_WORKSPACE/kj7_source/cts" ]; then
+            echo "=== Installing cts/libs/json ==="
+            mkdir -p cts
+            cp -r $GITHUB_WORKSPACE/kj7_source/cts/* cts/
+          fi
           
           mkdir -p vendor/tecno
           cp -r $GITHUB_WORKSPACE/kj7_source/vendor/tecno/kj7 vendor/tecno/kj7
@@ -467,6 +474,13 @@ jobs:
             printf '<manifest package="platform.test.motion.compose.values" />\n' > platform_testing/libraries/motion/compose/values/AndroidManifest.xml
             printf 'android_library {\n    name: "PlatformMotionTestingComposeValues",\n    manifest: "AndroidManifest.xml",\n    srcs: ["src/**/*.kt"],\n    sdk_version: "current",\n}\n' > platform_testing/libraries/motion/compose/values/Android.bp
             printf 'package platform.test.motion.compose.values\nobject MotionTestValue\n' > platform_testing/libraries/motion/compose/values/src/platform/test/motion/compose/values/MotionTestValue.kt
+          fi
+
+          # Ensure jsonlib is available (required by protologtool-lib)
+          if [ ! -f "cts/libs/json/Android.bp" ]; then
+            echo "=== Providing fallback cts/libs/json module ==="
+            mkdir -p cts/libs/json
+            printf 'package { default_applicable_licenses: ["Android-Apache-2.0"] }\njava_library {\n    name: "json",\n    host_supported: true,\n    srcs: ["src/**/*.java"],\n    sdk_version: "current",\n    java_version: "11",\n}\njava_library_host {\n    name: "jsonlib",\n    static_libs: ["json"],\n}\n' > cts/libs/json/Android.bp
           fi
 
           echo "=== Trees Installed ==="
