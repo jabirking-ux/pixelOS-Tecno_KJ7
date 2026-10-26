@@ -6,3 +6,17 @@
 
 soong_namespace {
 }
+
+cc_library_shared {
+    name: "libprocessgroup_shim",
+    vendor: true,
+    srcs: ["shims/libprocessgroup_shim.cpp"],
+    compile_multilib: "64",
+}
+
+cc_library_shared {
+    name: "libcamera_metadata_shim",
+    vendor: true,
+    srcs: ["shims/libcamera_metadata_shim.cpp"],
+    compile_multilib: "both",
+}

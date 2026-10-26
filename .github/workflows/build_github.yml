@@ -402,14 +402,14 @@ jobs:
       - name: Mount Transparently Compressed Btrfs Filesystem for Out Directory (Saves 40+ GB)
         run: |
           cd $WORK_DIR
-          echo "=== Setting up 70GB sparse Btrfs filesystem on NVMe root with zstd:3 compression ==="
+          echo "=== Setting up 70GB sparse Btrfs filesystem on NVMe root with zstd:1 fast compression ==="
           BACKING_DIR="$HOME/btrfs_backing"
           mkdir -p "$BACKING_DIR"
           sudo truncate -s 70G "$BACKING_DIR/out_sparse.img"
           sudo mkfs.btrfs -m single "$BACKING_DIR/out_sparse.img"
           
           mkdir -p out
-          sudo mount -o loop,compress=zstd:3,noatime,nodiratime,space_cache=v2 "$BACKING_DIR/out_sparse.img" out
+          sudo mount -o loop,compress=zstd:1,noatime,nodiratime,space_cache=v2,discard "$BACKING_DIR/out_sparse.img" out
           sudo chown -R $(id -u):$(id -g) out
           
           echo "=== Mounted compressed out directory ==="
@@ -483,6 +483,11 @@ jobs:
             printf 'package { default_applicable_licenses: ["Android-Apache-2.0"] }\njava_library {\n    name: "json",\n    host_supported: true,\n    srcs: ["src/**/*.java"],\n    sdk_version: "current",\n    java_version: "11",\n}\njava_library_host {\n    name: "jsonlib",\n    static_libs: ["json"],\n}\n' > cts/libs/json/Android.bp
           fi
 
+                    # Ensure vendor.mediatek.hardware.mtkpower fallback stub exists
+          if [ ! -f "vendor/tecno/kj7/empty.c" ]; then
+            printf 'int main(void) { return 0; }\nvoid mtkpower_stub(void) {}\n' > vendor/tecno/kj7/empty.c
+          fi
+
           echo "=== Trees Installed ==="
           ls -ld device/tecno/kj7 vendor/tecno/kj7 kernel/tecno/kj7 device/mediatek/sepolicy_vndr || true
 
@@ -504,12 +509,13 @@ jobs:
           sudo swapon /swapfile
 
           sudo sysctl -w vm.swappiness=10
-          sudo sysctl -w vm.vfs_cache_pressure=100
+          sudo sysctl -w vm.vfs_cache_pressure=50
+          sudo sysctl -w vm.dirty_ratio=20
+          sudo sysctl -w vm.dirty_background_ratio=5
           free -h
           df -h /
           
-          echo "=== Optimizing Blueprint & Soong for 16 GB Runner ==="
-          find build/ -type f \( -name "*.go" -o -name "*.sh" -o -name "*.bash" \) -exec sed -i 's/env -i /env -i GOMEMLIMIT=10GiB GOGC=80 /g' {} +
+          echo "=== Optimizing Blueprint & Soong for 16 GB Runner (In-RAM Garbage Collection) ==="
           
           source build/envsetup.sh
           echo "=== Configuring Lunch Target for Android 15 / PixelOS 17 ==="
@@ -519,15 +525,19 @@ jobs:
           lunch pixelos_kj7-userdebug
           
           export TARGET_BUILD_VARIANT=userdebug
+          export ALLOW_MISSING_DEPENDENCIES=true
+          export SOONG_ALLOW_MISSING_DEPENDENCIES=true
+          export BUILD_BROKEN_MISSING_PGO_DATA=true
           export SKIP_BOOT_JARS_CHECK=true
           export DONT_UNCOMPRESS_PRIV_APPS_DEXS=true
-          export WITH_DEXPREOPT_BOOT_IMG_AND_SYSTEM_SERVER_ONLY=true
-          export SOONG_ALLOW_MISSING_DEPENDENCIES=true
+          export WITH_DEXPREOPT=false
+          export WITH_DEXPREOPT_BOOT_IMG_AND_SYSTEM_SERVER_ONLY=false
           export USE_CCACHE=0
           export SOONG_GEN_COMPDB=0
-          export GOGC=80
-          export GOMEMLIMIT=10GiB
+          export GOGC=50
+          export GOMEMLIMIT=4GiB
           export RUN_ERROR_PRONE=false
+          export TURBINE_ENABLED=true
           
           # Monitor disk space: only purge intermediate debug symbols when storage exceeds 85%
           (

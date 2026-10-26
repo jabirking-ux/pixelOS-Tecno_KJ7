@@ -23761,3 +23761,30 @@ cc_prebuilt_library_shared {
     soc_specific: true,
     
 }
+
+cc_library_shared {
+    name: "vendor.mediatek.hardware.mtkpower@1.0",
+    vendor_available: true,
+    srcs: ["empty.c"],
+    compile_multilib: "both",
+}
+
+cc_library_shared {
+    name: "vendor.mediatek.hardware.mtkpower@1.1",
+    vendor_available: true,
+    srcs: ["empty.c"],
+    compile_multilib: "both",
+}
+
+cc_library_shared {
+    name: "vendor.mediatek.hardware.mtkpower@1.2",
+    vendor_available: true,
+    srcs: ["empty.c"],
+    compile_multilib: "both",
+}
+
+cc_binary {
+    name: "vendor.mediatek.hardware.mtkpower@1.2-service.stub",
+    vendor: true,
+    srcs: ["empty.c"],
+}
