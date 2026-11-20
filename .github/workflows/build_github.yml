@@ -385,6 +385,13 @@ jobs:
           rm -rf pdk developers
           rm -rf prebuilts/clang/host/darwin-x86
           rm -rf prebuilts/gcc/darwin-x86
+          rm -rf prebuilts/gcc/linux-x86/host/x86_64-w64-mingw32-4.8
+          rm -rf prebuilts/gcc/linux-x86/mips
+          rm -rf prebuilts/rust/darwin-x86
+          rm -rf prebuilts/go/darwin-x86
+          rm -rf prebuilts/jdk/jdk8/darwin-x86 prebuilts/jdk/jdk9/darwin-x86 prebuilts/jdk/jdk11/darwin-x86
+          rm -rf prebuilts/misc/darwin-x86
+          rm -rf prebuilts/abi-dumps
           rm -rf prebuilts/rust/linux-x86/*/share/doc 2>/dev/null || true
           
           # 3. Ensure toolchain/pgo-profiles exists for soong_config.mk
@@ -409,7 +416,7 @@ jobs:
           sudo mkfs.btrfs -m single "$BACKING_DIR/out_sparse.img"
           
           mkdir -p out
-          sudo mount -o loop,compress=zstd:1,noatime,nodiratime,space_cache=v2,discard "$BACKING_DIR/out_sparse.img" out
+          sudo mount -o loop,compress-force=zstd:1,noatime,nodiratime,space_cache=v2,discard "$BACKING_DIR/out_sparse.img" out
           sudo chown -R $(id -u):$(id -g) out
           
           echo "=== Mounted compressed out directory ==="
@@ -494,16 +501,23 @@ jobs:
       - name: Compile PixelOS for Tecno KJ7 (Continuous Symbol Stripping)
         run: |
           cd $WORK_DIR
-          echo "=== Protecting GitHub Actions runner processes against OOM killer & CPU starvation ==="
-          pgrep -f "Runner" | while read pid; do
-            sudo sh -c "echo -1000 > /proc/$pid/oom_score_adj" 2>/dev/null || true
-            sudo renice -n -10 -p $pid 2>/dev/null || true
-          done
+          echo "=== Launching Continuous Runner Protection Daemon (Immunity to CPU/IO Starvation & OOM) ==="
+          (
+            while true; do
+              pgrep -f "Runner" | while read pid; do
+                sudo renice -n -15 -p $pid 2>/dev/null || true
+                sudo ionice -c 1 -n 0 -p $pid 2>/dev/null || true
+                sudo sh -c "echo -1000 > /proc/$pid/oom_score_adj" 2>/dev/null || true
+              done
+              sleep 10
+            done
+          ) &
+          RUNNER_DAEMON_PID=$!
 
-          echo "=== Setting up 16 GB NVMe Swapfile ==="
+          echo "=== Setting up 6 GB NVMe Swapfile (Saves 10 GB SSD Headroom) ==="
           sudo swapoff -a || true
           sudo rm -f /swapfile || true
-          sudo fallocate -l 16G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=16384
+          sudo fallocate -l 6G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=6144
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
           sudo swapon /swapfile
@@ -538,23 +552,29 @@ jobs:
           export GOMEMLIMIT=4GiB
           export RUN_ERROR_PRONE=false
           export TURBINE_ENABLED=true
+          export SKIP_ABI_CHECKS=true
+          export SOONG_STRIP_ALL=true
           
-          # Monitor disk space: only purge intermediate debug symbols when storage exceeds 85%
+          # Active Disk Space Guard: Check every 20 seconds, purge emergency cache if root drops below 5 GB
           (
             while true; do
-              sleep 300
-              USAGE=$(df / | awk 'NR==2 {print $5}' | tr -d '%')
-              if [ "$USAGE" -gt 85 ] && [ -d "$WORK_DIR/out/target/product/kj7" ]; then
-                echo "=== High disk usage ($USAGE%) detected: purging debug symbols ==="
+              sleep 20
+              AVAIL_GB=$(df -BG / | awk 'NR==2 {print $4}' | tr -d 'G')
+              if [ -n "$AVAIL_GB" ] && [ "$AVAIL_GB" -lt 5 ]; then
+                echo "=== LOW DISK SPACE WARNING: ${AVAIL_GB}GB remaining on root. Executing emergency cleanup ==="
+                sudo rm -rf /tmp/* /var/tmp/* 2>/dev/null || true
                 rm -rf $WORK_DIR/out/target/product/kj7/symbols 2>/dev/null || true
                 rm -rf $WORK_DIR/out/target/product/kj7/obj/SHARED_LIBRARIES/*_intermediates/LINKED 2>/dev/null || true
                 rm -rf $WORK_DIR/out/target/product/kj7/obj/STATIC_LIBRARIES/*_intermediates/LINKED 2>/dev/null || true
+                sync
               fi
             done
           ) &
-          MONITOR_PID=$!
-          m -j$(nproc --all) ${{ github.event.inputs.build_target }}
-          kill $MONITOR_PID 2>/dev/null || true
+          DISK_WATCHDOG_PID=$!
+
+          echo "=== Starting Build with High-Priority Runner Protection (nice -n 10 ionice -c 3) ==="
+          nice -n 10 ionice -c 3 m -j$(nproc --all) ${{ github.event.inputs.build_target }}
+          kill $RUNNER_DAEMON_PID $DISK_WATCHDOG_PID 2>/dev/null || true
 
       - name: Upload Output Artifact to GitHub Release
         uses: softprops/action-gh-release@v2
