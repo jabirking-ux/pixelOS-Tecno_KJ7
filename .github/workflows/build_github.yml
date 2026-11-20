@@ -137,144 +137,116 @@ jobs:
         run: |
           cd $WORK_DIR
           mkdir -p .repo/local_manifests
-          
-          python3 - << 'EOF'
-          import subprocess, os
+          python3 - << 'PYEOF'
+          import subprocess
 
-          # Candidates to remove (saves 70+ GB and thousands of targets)
           bloat_candidates = [
-            # Test Suites & Testing Frameworks
-            "platform/cts", "platform/pdk", "platform/developers/build", "platform/developers/samples/android",
-            "platform/test/vts", "platform/test/vts-testcase/kernel", "platform/test/vts-testcase/hal",
-            "platform/test/vts-testcase/security", "platform/test/vts-testcase/performance",
-            "platform/test/vts-testcase/vndk", "platform/test/vts-testcase/nbu", "platform/test/catbox",
-            "platform/test/cts-root", "platform/test/dittosuite", "platform/test/mlts/benchmark",
-            "platform/test/mlts/models", "platform/test/robolectric-extensions", "platform/test/suite_harness",
-            "platform/tools/test/connectivity", "platform/tools/tradefederation",
-            "platform/tools/tradefederation/contrib", "platform/tools/tradefederation/prebuilts",
-            "platform/external/deqp", "platform/packages/apps/Test/connectivity",
-
-            # Stock AOSP Apps Replaced by Pixel GMS Apps
-            "platform/packages/apps/Browser2", "platform/packages/apps/Calendar", "platform/packages/apps/Camera2",
-            "platform/packages/apps/Contacts", "platform/packages/apps/DeskClock", "platform/packages/apps/Dialer",
-            "platform/packages/apps/Gallery2", "platform/packages/apps/HTMLViewer", "platform/packages/apps/Messaging",
-            "platform/packages/apps/Music", "platform/packages/apps/QuickSearchBox", "platform/packages/apps/WallpaperPicker2",
-            "platform/packages/apps/EmergencyInfo", "platform/packages/apps/Tag", "platform/packages/apps/ThemePicker",
-            "platform/packages/services/AlternativeNetworkAccess",
-
-            # Tooling & Simulation Repositories
-            "platform/tools/doc_generation", "platform/tools/currysrc", "platform/tools/trebuchet",
-            "platform/tools/security", "platform/tools/repohooks", "platform/tools/ndkports",
-            "platform/tools/loganalysis", "platform/tools/aadevtools", "platform/tools/acloud",
-            "platform/tools/apifinder", "platform/tools/carrier_settings", "platform/tools/deviceinfra/prebuilts",
-            "platform/tools/test/desktop/mobly", "platform/tools/test/mobly_extensions",
-            "platform/tools/test/mobly_snippets", "platform/tools/test/openhst", "platform/tools/treble",
-
-            # Automotive / Car / SDV
-            "platform/packages/apps/Car/SystemUI", "platform/packages/apps/Car/Cluster",
-            "platform/packages/apps/Car/DebuggingRestrictionController", "platform/packages/apps/Car/LatinIME",
-            "platform/packages/apps/Car/Launcher", "platform/packages/apps/Car/LocalMediaPlayer",
-            "platform/packages/apps/Car/Notification", "platform/packages/apps/Car/Provision",
-            "platform/packages/apps/Car/RotaryController", "platform/packages/apps/Car/Settings",
-            "platform/packages/apps/Car/systemlibs", "platform/packages/apps/Car/SystemUpdater",
-            "platform/system/software_defined_vehicle/common", "platform/system/software_defined_vehicle/health_monitor",
-            "platform/system/software_defined_vehicle/lifecycle_management", "platform/system/software_defined_vehicle/middleware",
-            "platform/system/software_defined_vehicle/orchestration", "platform/system/software_defined_vehicle/samples",
-            "platform/system/software_defined_vehicle/sdv_gateway", "platform/system/software_defined_vehicle/service_bundles_registry",
-            "platform/system/software_defined_vehicle/some_ip", "platform/system/software_defined_vehicle/tools",
-            "platform/system/software_defined_vehicle/update_manager", "platform/system/software_defined_vehicle/vpm",
-            "platform/system/software_defined_vehicle/vsidl", "platform/system/software_defined_vehicle/automotive_services",
-            "platform/system/software_defined_vehicle/platform", "platform/system/software_defined_vehicle/telemetry",
-
-            # TV
-            "platform/packages/apps/TvSettings", "platform/packages/apps/TvSystemUI",
-
-            # Emulators & Virtual Devices
-            "platform/prebuilts/android-emulator", "platform/prebuilts/qemu-kernel",
-            "device/google/cuttlefish", "device/google/cuttlefish_prebuilts", "device/google/cuttlefish_vmm",
-            "device/generic/arm64", "device/generic/armv7-a-neon", "device/generic/car", "device/generic/common",
-            "device/generic/trusty", "device/generic/x86", "device/generic/x86_64", "device/linaro/hikey",
-            "device/linaro/hikey-kernel",
-
-            # Host Toolchains (Darwin/Musl/Mingw)
-            "platform/prebuilts/clang/host/darwin-x86", "platform/prebuilts/go/darwin-x86",
-            "platform/prebuilts/rust-toolchain/darwin", "platform/prebuilts/rust-toolchain/linux-musl-x86",
-            "platform/prebuilts/gcc/linux-x86/host/x86_64-w64-mingw32-4.8",
-
-            # Unused Kernels
-            "kernel/prebuilts/6.1/x86-64", "kernel/prebuilts/6.6/x86-64", "kernel/prebuilts/6.12/x86-64",
-            "kernel/prebuilts/6.18/x86-64", "kernel/prebuilts/mainline/x86-64",
-            "kernel/prebuilts/common-modules/virtual-device/6.1/arm64", "kernel/prebuilts/common-modules/virtual-device/6.1/x86-64",
-            "kernel/prebuilts/common-modules/virtual-device/6.6/arm64", "kernel/prebuilts/common-modules/virtual-device/6.6/x86-64",
-            "kernel/prebuilts/common-modules/virtual-device/6.12/arm64", "kernel/prebuilts/common-modules/virtual-device/6.12/x86-64",
-            "kernel/prebuilts/common-modules/virtual-device/6.18/arm64", "kernel/prebuilts/common-modules/virtual-device/6.18/x86-64",
-            "kernel/prebuilts/common-modules/virtual-device/mainline/arm64", "kernel/prebuilts/common-modules/virtual-device/mainline/x86-64",
-            "LineageOS/android_prebuilts_clang_kernel_linux-x86_clang-r416183b", "kernel/prebuilts/build-tools",
-
-            # Qualcomm HALs
-            "LineageOS/android_hardware_qcom_sm7250_display", "LineageOS/android_hardware_qcom_sm7250_gps",
-            "LineageOS/android_hardware_qcom_sm8150_display", "LineageOS/android_hardware_qcom_sm8150_gps",
-            "LineageOS/android_device_qcom_sepolicy", "LineageOS/android_device_qcom_sepolicy_vndr",
-            "LineageOS/android_hardware_qcom_bootctrl", "LineageOS/android_hardware_qcom-caf_common",
-            "LineageOS/android_hardware_qcom_audio", "LineageOS/android_hardware_qcom_display",
-            "LineageOS/android_hardware_qcom_media", "LineageOS/android_vendor_qcom_opensource_agm",
-            "LineageOS/android_vendor_qcom_opensource_audioreach-graphservices",
-            "LineageOS/android_vendor_qcom_opensource_arpal-lx", "LineageOS/android_hardware_qcom_audio-ar",
-            "LineageOS/android_vendor_qcom_opensource_data-ipa-cfg-mgr", "LineageOS/android_vendor_qcom_opensource_dataipa",
-            "LineageOS/android_vendor_qcom_opensource_display-core", "LineageOS/android_vendor_qcom_opensource_display-intf",
-            "LineageOS/android_hardware_qcom_thermal", "LineageOS/android_hardware_qcom_wlan",
-            "LineageOS/android_vendor_qcom_opensource_audio-hal_st-hal",
-            "LineageOS/android_vendor_qcom_opensource_audio-hal_st-hal-ar",
-            "LineageOS/android_vendor_qcom_opensource_audio-commonsys-intf",
-            "LineageOS/android_vendor_qcom_opensource_display-commonsys-intf",
-            "LineageOS/android_vendor_qcom_opensource_audio", "LineageOS/android_vendor_qcom_opensource_display-commonsys",
-            "LineageOS/android_vendor_qcom_opensource_fm-commonsys", "LineageOS/android_vendor_qcom_opensource_wfd-commonsys",
-            "LineageOS/android_vendor_qcom_opensource_core-utils-sys", "LineageOS/android_vendor_qcom_opensource_core-utils-vendor",
-            "LineageOS/android_vendor_qcom_opensource_dataservices", "LineageOS/android_vendor_qcom_opensource_display",
-            "LineageOS/android_vendor_qcom_opensource_healthd-ext", "LineageOS/android_vendor_qcom_opensource_interfaces",
-            "LineageOS/android_vendor_qcom_opensource_libfmjni", "LineageOS/android_vendor_qcom_opensource_libqspa",
-            "LineageOS/android_vendor_qcom_opensource_libvmmem", "LineageOS/android_vendor_qcom_opensource_power",
-            "LineageOS/android_vendor_qcom_opensource_thermal-engine", "LineageOS/android_vendor_qcom_opensource_usb",
-            "LineageOS/android_vendor_qcom_opensource_vibrator", "LineageOS/android_vendor_codeaurora_telephony",
-
-            # Trusty Firmware
-            "trusty/external/trusted-firmware-a", "trusty/external/trusty", "trusty/external/headers",
-            "trusty/lk/common", "trusty/external/musl", "kernel/prebuilts/common-modules/trusty/6.6/arm64",
-            "kernel/prebuilts/common-modules/trusty/6.12/arm64", "trusty/device/arm/generic-arm64",
-            "trusty/device/arm/vexpress-a15", "trusty/device/common", "trusty/device/desktop",
-            "trusty/device/nxp/imx7d", "trusty/device/x86/generic-x86_64", "trusty/lk/nxp",
-            "trusty/host/common", "trusty/lk/trusty", "trusty/app/authmgr", "trusty/app/avb",
-            "trusty/app/cast-auth", "trusty/app/confirmationui", "trusty/app/gatekeeper",
-            "trusty/app/keymaster", "trusty/app/keymint", "trusty/app/sample", "trusty/app/secretkeeper",
-            "trusty/app/storage", "trusty/user/desktop", "trusty/vendor/google/aosp"
+              "platform/cts", "platform/pdk", "platform/developers/build", "platform/developers/samples/android",
+              "platform/test/vts", "platform/test/vts-testcase/kernel", "platform/test/vts-testcase/hal",
+              "platform/test/vts-testcase/security", "platform/test/vts-testcase/performance",
+              "platform/test/vts-testcase/vndk", "platform/test/vts-testcase/nbu", "platform/test/catbox",
+              "platform/test/cts-root", "platform/test/dittosuite", "platform/test/mlts/benchmark",
+              "platform/test/mlts/models", "platform/test/robolectric-extensions", "platform/test/suite_harness",
+              "platform/tools/test/connectivity", "platform/tools/tradefederation",
+              "platform/tools/tradefederation/contrib", "platform/tools/tradefederation/prebuilts",
+              "platform/external/deqp", "platform/packages/apps/Test/connectivity",
+              "platform/packages/apps/Browser2", "platform/packages/apps/Calendar", "platform/packages/apps/Camera2",
+              "platform/packages/apps/Contacts", "platform/packages/apps/DeskClock", "platform/packages/apps/Dialer",
+              "platform/packages/apps/Gallery2", "platform/packages/apps/HTMLViewer", "platform/packages/apps/Messaging",
+              "platform/packages/apps/Music", "platform/packages/apps/QuickSearchBox", "platform/packages/apps/WallpaperPicker2",
+              "platform/packages/apps/EmergencyInfo", "platform/packages/apps/Tag", "platform/packages/apps/ThemePicker",
+              "platform/packages/services/AlternativeNetworkAccess",
+              "platform/tools/doc_generation", "platform/tools/currysrc", "platform/tools/trebuchet",
+              "platform/tools/security", "platform/tools/repohooks", "platform/tools/ndkports",
+              "platform/tools/loganalysis", "platform/tools/aadevtools", "platform/tools/acloud",
+              "platform/tools/apifinder", "platform/tools/carrier_settings", "platform/tools/deviceinfra/prebuilts",
+              "platform/tools/test/desktop/mobly", "platform/tools/test/mobly_extensions",
+              "platform/tools/test/mobly_snippets", "platform/tools/test/openhst", "platform/tools/treble",
+              "platform/packages/apps/Car/SystemUI", "platform/packages/apps/Car/Cluster",
+              "platform/packages/apps/Car/DebuggingRestrictionController", "platform/packages/apps/Car/LatinIME",
+              "platform/packages/apps/Car/Launcher", "platform/packages/apps/Car/LocalMediaPlayer",
+              "platform/packages/apps/Car/Notification", "platform/packages/apps/Car/Provision",
+              "platform/packages/apps/Car/RotaryController", "platform/packages/apps/Car/Settings",
+              "platform/packages/apps/Car/systemlibs", "platform/packages/apps/Car/SystemUpdater",
+              "platform/system/software_defined_vehicle/common", "platform/system/software_defined_vehicle/health_monitor",
+              "platform/system/software_defined_vehicle/lifecycle_management", "platform/system/software_defined_vehicle/middleware",
+              "platform/system/software_defined_vehicle/orchestration", "platform/system/software_defined_vehicle/samples",
+              "platform/system/software_defined_vehicle/sdv_gateway", "platform/system/software_defined_vehicle/service_bundles_registry",
+              "platform/system/software_defined_vehicle/some_ip", "platform/system/software_defined_vehicle/tools",
+              "platform/system/software_defined_vehicle/update_manager", "platform/system/software_defined_vehicle/vpm",
+              "platform/system/software_defined_vehicle/vsidl", "platform/system/software_defined_vehicle/automotive_services",
+              "platform/system/software_defined_vehicle/platform", "platform/system/software_defined_vehicle/telemetry",
+              "platform/packages/apps/TvSettings", "platform/packages/apps/TvSystemUI",
+              "platform/prebuilts/android-emulator", "platform/prebuilts/qemu-kernel",
+              "device/google/cuttlefish", "device/google/cuttlefish_prebuilts", "device/google/cuttlefish_vmm",
+              "device/generic/arm64", "device/generic/armv7-a-neon", "device/generic/car", "device/generic/common",
+              "device/generic/trusty", "device/generic/x86", "device/generic/x86_64", "device/linaro/hikey",
+              "device/linaro/hikey-kernel",
+              "platform/prebuilts/clang/host/darwin-x86", "platform/prebuilts/go/darwin-x86",
+              "platform/prebuilts/rust-toolchain/darwin", "platform/prebuilts/rust-toolchain/linux-musl-x86",
+              "platform/prebuilts/gcc/linux-x86/host/x86_64-w64-mingw32-4.8",
+              "kernel/prebuilts/6.1/x86-64", "kernel/prebuilts/6.6/x86-64", "kernel/prebuilts/6.12/x86-64",
+              "kernel/prebuilts/6.18/x86-64", "kernel/prebuilts/mainline/x86-64",
+              "kernel/prebuilts/common-modules/virtual-device/6.1/arm64", "kernel/prebuilts/common-modules/virtual-device/6.1/x86-64",
+              "kernel/prebuilts/common-modules/virtual-device/6.6/arm64", "kernel/prebuilts/common-modules/virtual-device/6.6/x86-64",
+              "kernel/prebuilts/common-modules/virtual-device/6.12/arm64", "kernel/prebuilts/common-modules/virtual-device/6.12/x86-64",
+              "kernel/prebuilts/common-modules/virtual-device/6.18/arm64", "kernel/prebuilts/common-modules/virtual-device/6.18/x86-64",
+              "kernel/prebuilts/common-modules/virtual-device/mainline/arm64", "kernel/prebuilts/common-modules/virtual-device/mainline/x86-64",
+              "LineageOS/android_prebuilts_clang_kernel_linux-x86_clang-r416183b", "kernel/prebuilts/build-tools",
+              "LineageOS/android_hardware_qcom_sm7250_display", "LineageOS/android_hardware_qcom_sm7250_gps",
+              "LineageOS/android_hardware_qcom_sm8150_display", "LineageOS/android_hardware_qcom_sm8150_gps",
+              "LineageOS/android_device_qcom_sepolicy", "LineageOS/android_device_qcom_sepolicy_vndr",
+              "LineageOS/android_hardware_qcom_bootctrl", "LineageOS/android_hardware_qcom-caf_common",
+              "LineageOS/android_hardware_qcom_audio", "LineageOS/android_hardware_qcom_display",
+              "LineageOS/android_hardware_qcom_media", "LineageOS/android_vendor_qcom_opensource_agm",
+              "LineageOS/android_vendor_qcom_opensource_audioreach-graphservices",
+              "LineageOS/android_vendor_qcom_opensource_arpal-lx", "LineageOS/android_hardware_qcom_audio-ar",
+              "LineageOS/android_vendor_qcom_opensource_data-ipa-cfg-mgr", "LineageOS/android_vendor_qcom_opensource_dataipa",
+              "LineageOS/android_vendor_qcom_opensource_display-core", "LineageOS/android_vendor_qcom_opensource_display-intf",
+              "LineageOS/android_hardware_qcom_thermal", "LineageOS/android_hardware_qcom_wlan",
+              "LineageOS/android_vendor_qcom_opensource_audio-hal_st-hal",
+              "LineageOS/android_vendor_qcom_opensource_audio-hal_st-hal-ar",
+              "LineageOS/android_vendor_qcom_opensource_audio-commonsys-intf",
+              "LineageOS/android_vendor_qcom_opensource_display-commonsys-intf",
+              "LineageOS/android_vendor_qcom_opensource_audio", "LineageOS/android_vendor_qcom_opensource_display-commonsys",
+              "LineageOS/android_vendor_qcom_opensource_fm-commonsys", "LineageOS/android_vendor_qcom_opensource_wfd-commonsys",
+              "LineageOS/android_vendor_qcom_opensource_core-utils-sys", "LineageOS/android_vendor_qcom_opensource_core-utils-vendor",
+              "LineageOS/android_vendor_qcom_opensource_dataservices", "LineageOS/android_vendor_qcom_opensource_display",
+              "LineageOS/android_vendor_qcom_opensource_healthd-ext", "LineageOS/android_vendor_qcom_opensource_interfaces",
+              "LineageOS/android_vendor_qcom_opensource_libfmjni", "LineageOS/android_vendor_qcom_opensource_libqspa",
+              "LineageOS/android_vendor_qcom_opensource_libvmmem", "LineageOS/android_vendor_qcom_opensource_power",
+              "LineageOS/android_vendor_qcom_opensource_thermal-engine", "LineageOS/android_vendor_qcom_opensource_usb",
+              "LineageOS/android_vendor_qcom_opensource_vibrator", "LineageOS/android_vendor_codeaurora_telephony",
+              "trusty/external/trusted-firmware-a", "trusty/external/trusty", "trusty/external/headers",
+              "trusty/lk/common", "trusty/external/musl", "kernel/prebuilts/common-modules/trusty/6.6/arm64",
+              "kernel/prebuilts/common-modules/trusty/6.12/arm64", "trusty/device/arm/generic-arm64",
+              "trusty/device/arm/vexpress-a15", "trusty/device/common", "trusty/device/desktop",
+              "trusty/device/nxp/imx7d", "trusty/device/x86/generic-x86_64", "trusty/lk/nxp",
+              "trusty/host/common", "trusty/lk/trusty", "trusty/app/authmgr", "trusty/app/avb",
+              "trusty/app/cast-auth", "trusty/app/confirmationui", "trusty/app/gatekeeper",
+              "trusty/app/keymaster", "trusty/app/keymint", "trusty/app/sample", "trusty/app/secretkeeper",
+              "trusty/app/storage", "trusty/user/desktop", "trusty/vendor/google/aosp"
           ]
 
-          # Query currently active projects in initialized repo manifest
-          active_projects = set()
           try:
-            res = subprocess.run(["repo", "list", "-n"], capture_output=True, text=True, check=True)
-            active_projects = set(line.strip() for line in res.stdout.splitlines() if line.strip())
-          except Exception as e:
-            print("Notice: repo list failed, falling back to all non-problematic candidates:", e)
-            active_projects = set(bloat_candidates)
+              res = subprocess.run(["repo", "list", "-n"], capture_output=True, text=True, check=True)
+              active = set(line.strip() for line in res.stdout.splitlines() if line.strip())
+          except Exception:
+              active = set(bloat_candidates)
 
-          # Write only candidates that actually exist in the manifest
           xml_lines = ['<?xml version="1.0" encoding="UTF-8"?>', '<manifest>']
           removed_count = 0
-          for proj in bloat_candidates:
-            if proj in active_projects:
-              xml_lines.append(f'  <remove-project name="{proj}" />')
-              removed_count += 1
-
+          for p in bloat_candidates:
+              if p in active:
+                  xml_lines.append(f'  <remove-project name="{p}" />')
+                  removed_count += 1
           xml_lines.append('</manifest>')
+
           with open('.repo/local_manifests/remove_bloat.xml', 'w') as f:
-            f.write('
-'.join(xml_lines) + '
-')
-
+              for line in xml_lines:
+                  f.write(line + chr(10))
           print(f"=== Successfully dynamically generated remove_bloat.xml with {removed_count} active projects removed ===")
-          EOF
-
+          PYEOF
       - name: Sync Source Tree
         run: |
           cd $WORK_DIR
